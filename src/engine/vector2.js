@@ -9,6 +9,19 @@ export default class Vector2 {
         this.y = y;
     }
 
+    set(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    clone() {
+        return new Vector2(this.x, this.y);
+    }
+
+    equals(vector) {
+        return this.x === vector.x && this.y === vector.y;
+    }
+
     add(vector) {
         return new Vector2(this.x + vector.x, this.y + vector.y);
     }
