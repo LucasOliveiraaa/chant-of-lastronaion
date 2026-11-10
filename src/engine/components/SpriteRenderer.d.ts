@@ -11,18 +11,20 @@ export type AnimationConfig = {
     loop: boolean;
 };
 
-export type SpriteConfig = {
-    sprite: HTMLImageElement;
-
+export type SpriteSheetConfig = {
     gap: Vector2;
     margin: Vector2;
 
     rows: number;
     cols: number;
 
-    animations: AnimationConfig[];
+    animations: Map<string, AnimationConfig>;
 };
 
 export default class SpriteRenderer extends Component {
-    constructor(config: SpriteConfig);
+    constructor(sprite: HTMLImageElement, config: SpriteSheetConfig);
+
+    update(target: any, deltaTime: number): void;
+
+    setAnimation(name: string): void;
 }

@@ -1,5 +1,5 @@
 export default class Component {
-    update(world, target, deltaTime) {
+    update(target, deltaTime) {
         // Update the component's state
     }
 }

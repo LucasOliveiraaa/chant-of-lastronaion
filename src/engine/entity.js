@@ -3,6 +3,9 @@ import Vector2 from "./vector2.js";
 export default class Entity {
     components = [];
 
+    name = null;
+    id = null;
+
     constructor(position = Vector2.ZERO, size = Vector2.ONE) {
         this.position = position;
         this.size = size;
@@ -10,6 +13,7 @@ export default class Entity {
 
     addComponent(component) {
         this.components.push(component);
+        return component;
     }
 
     removeComponent(component) {
@@ -19,10 +23,14 @@ export default class Entity {
         }
     }
 
-    __update(world, deltaTime) {
+    getComponent(componentClass) {
+        return this.components.find(component => component instanceof componentClass);
+    }
+
+    __update(deltaTime) {
         for (const component of this.components) {
             if (component.update) {
-                component.update(world, this, deltaTime);
+                component.update(this, deltaTime);
             }
         }
 
