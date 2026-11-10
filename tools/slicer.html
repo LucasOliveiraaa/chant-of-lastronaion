@@ -1,0 +1,285 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprite sheet slicer</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Inter, system-ui, sans-serif;
+            background: #f4f5f7;
+            color: #20242c;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            margin: 0 0 25px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .controls {
+            max-width: 900px;
+            background: white;
+            border: 1px solid #e1e4e8;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 25px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            box-shadow: 0 3px 12px #00000008;
+        }
+
+        .controls label {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555e6b;
+        }
+
+        .controls input[type="number"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d9dee5;
+            border-radius: 7px;
+            background: #fafbfc;
+            color: #20242c;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .controls input[type="number"]:focus {
+            border-color: #4f7df3;
+            box-shadow: 0 0 0 3px #4f7df320;
+        }
+
+        .controls input[type="file"] {
+            grid-column: 1 / -1;
+            width: 100%;
+            padding: 12px;
+            background: #f8f9fb;
+            border: 1px dashed #cbd1da;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        #sliceButton {
+            grid-column: 1 / -1;
+            padding: 12px;
+            border: none;
+            border-radius: 7px;
+            background: #3568df;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #sliceButton:hover {
+            background: #2855bd;
+        }
+
+        .canvas-container {
+            background: white;
+            border: 1px solid #e1e4e8;
+            border-radius: 12px;
+            padding: 20px;
+            overflow: auto;
+            min-height: 150px;
+        }
+
+        canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            margin: auto;
+            background-color: #f8f9fb;
+            background-image:
+                linear-gradient(45deg, #e8eaee 25%, transparent 25%),
+                linear-gradient(-45deg, #e8eaee 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #e8eaee 75%),
+                linear-gradient(-45deg, transparent 75%, #e8eaee 75%);
+            background-size: 20px 20px;
+            background-position:
+                0 0, 0 10px, 10px -10px, -10px 0;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 20px 12px;
+            }
+
+            .controls {
+                grid-template-columns: repeat(2, 1fr);
+                padding: 16px;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Sprite sheet slicer</h1>
+
+    <div class="controls">
+        <input type="file" id="spriteFile" accept="image/*">
+
+        <label for="rows">
+            Rows
+            <input type="number" id="rows" value="1" min="1">
+        </label>
+
+        <label for="cols">
+            Columns
+            <input type="number" id="cols" value="1" min="1">
+        </label>
+
+        <label for="gapX">
+            Gap X
+            <input type="number" id="gapX" value="0" min="0">
+        </label>
+
+        <label for="gapY">
+            Gap Y
+            <input type="number" id="gapY" value="0" min="0">
+        </label>
+
+        <label for="marginX">
+            Margin X
+            <input type="number" id="marginX" value="0" min="0">
+        </label>
+
+        <label for="marginY">
+            Margin Y
+            <input type="number" id="marginY" value="0" min="0">
+        </label>
+
+        <button id="sliceButton">Slice</button>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="spriteCanvas"></canvas>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById("spriteFile");
+        const canvas = document.getElementById("spriteCanvas");
+        const ctx = canvas.getContext("2d");
+
+        let spriteImage = new Image();
+
+        fileInput.addEventListener("change", (event) => {
+            const file = event.target.files[0];
+
+            if (!file) return;
+
+            const url = URL.createObjectURL(file);
+
+            spriteImage.onload = () => {
+                canvas.width = spriteImage.width;
+                canvas.height = spriteImage.height;
+
+                URL.revokeObjectURL(url);
+                slice();
+            };
+
+            spriteImage.src = url;
+        });
+
+        const inputs = document.querySelectorAll(
+            '.controls input[type="number"]'
+        );
+
+        inputs.forEach(input => {
+            input.addEventListener("input", slice);
+        });
+
+        document.getElementById("sliceButton")
+            .addEventListener("click", slice);
+
+        function slice() {
+            if (!spriteImage.complete || !spriteImage.naturalWidth) {
+                return;
+            }
+
+            const rows = Number(document.getElementById("rows").value);
+            const cols = Number(document.getElementById("cols").value);
+
+            const gapX = Number(document.getElementById("gapX").value);
+            const gapY = Number(document.getElementById("gapY").value);
+
+            const marginX = Number(document.getElementById("marginX").value);
+            const marginY = Number(document.getElementById("marginY").value);
+
+            if (
+                !Number.isInteger(rows) || rows < 1 ||
+                !Number.isInteger(cols) || cols < 1 ||
+                ![gapX, gapY, marginX, marginY].every(
+                    value => Number.isFinite(value) && value >= 0
+                )
+            ) {
+                return;
+            }
+
+            const spriteWidth =
+                (spriteImage.width - 2 * marginX - (cols - 1) * gapX) / cols;
+
+            const spriteHeight =
+                (spriteImage.height - 2 * marginY - (rows - 1) * gapY) / rows;
+
+            if (spriteWidth <= 0 || spriteHeight <= 0) return;
+
+            canvas.width = spriteImage.width;
+            canvas.height = spriteImage.height;
+
+            ctx.drawImage(spriteImage, 0, 0);
+
+            ctx.strokeStyle = "#00ff00";
+            ctx.lineWidth = 2;
+
+            ctx.font = "bold 16px Arial";
+            ctx.textBaseline = "top";
+            ctx.textAlign = "left";
+
+            let spriteNumber = 0;
+
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const x = marginX + col * (spriteWidth + gapX);
+                    const y = marginY + row * (spriteHeight + gapY);
+
+                    ctx.strokeRect(x, y, spriteWidth, spriteHeight);
+
+                    const text = String(spriteNumber);
+                    const textX = x + 3;
+                    const textY = y + 3;
+
+                    ctx.fillStyle = "black";
+                    ctx.fillRect(
+                        textX - 2,
+                        textY - 2,
+                        ctx.measureText(text).width + 6,
+                        20
+                    );
+
+                    ctx.fillStyle = "white";
+                    ctx.fillText(text, textX, textY);
+
+                    spriteNumber++;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
