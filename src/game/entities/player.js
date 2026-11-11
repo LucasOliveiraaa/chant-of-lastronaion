@@ -1,4 +1,6 @@
-import SolidRenderer from "../../engine/components/SolidRenderer.js";
+import Collider from "../../engine/components/Collider.js";
+import Rigidbody from "../../engine/components/Rigidbody.js";
+import SpriteRenderer from "../../engine/components/SpriteRenderer.js";
 import Entity from "../../engine/entity.js";
 import Input from "../../engine/input.js";
 import Vector2 from "../../engine/vector2.js";
@@ -6,24 +8,30 @@ import Vector2 from "../../engine/vector2.js";
 const SPEED = 100;
 
 export default class Player extends Entity {
-    constructor() {
-        super(Vector2.ZERO, new Vector2(100, 100));
+    facing = "South";
 
-        this.addComponent(new SolidRenderer("red"));
+    constructor() {
+        super(new Vector2(0, 0), new Vector2(100, 100));
+
+        this.rigidbody = this.addComponent(new Rigidbody({ mass: 1, gravityScale: 0 }));
+        this.rigidbody.velocity = new Vector2(0, 0);
+
+        this.addComponent(new Collider({ type: "square", size: this.size }));
     }
 
     update(deltaTime) {
-        if (Input.isKeyPressed("KeyW")) {
-            this.position.y -= SPEED * deltaTime;
-        }
-        if (Input.isKeyPressed("KeyS")) {
-            this.position.y += SPEED * deltaTime;
-        }
-        if (Input.isKeyPressed("KeyA")) {
-            this.position.x -= SPEED * deltaTime;
-        }
-        if (Input.isKeyPressed("KeyD")) {
-            this.position.x += SPEED * deltaTime;
-        }
+        const x = Number(Input.isKeyPressed("KeyD")) - Number(Input.isKeyPressed("KeyA"));
+        const y = Number(Input.isKeyPressed("KeyS")) - Number(Input.isKeyPressed("KeyW"));
+
+        // Normalized so diagonals aren't faster.
+        const length = Math.hypot(x, y) || 1;
+        this.rigidbody.velocity.set((x / length) * SPEED, (y / length) * SPEED);
+
+        if (x !== 0) this.facing = x > 0 ? "East" : "West";
+        else if (y !== 0) this.facing = y > 0 ? "South" : "North";
+
+        this.getComponent(SpriteRenderer)?.setAnimation(
+            x !== 0 || y !== 0 ? `run${this.facing}` : "idle"
+        );
     }
 }

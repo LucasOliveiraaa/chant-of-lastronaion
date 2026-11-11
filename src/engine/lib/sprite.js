@@ -38,13 +38,10 @@ export function renderSprite(ctx, position, size, sprite, bounds) {
     );
 }
 
-export function range(start, end, step = 1, inclusive = false) {
+export function range(start, end) {
     const result = [];
-    for (let i = start; i < end; i += step) {
+    for (let i = start; i <= end; i++) {
         result.push(i);
-    }
-    if (inclusive && result.length > 0 && result[result.length - 1] !== end) {
-        result.push(end);
     }
     return result;
 }
