@@ -1,4 +1,4 @@
-import type Entity from "./entity.js";
+import type Entity from "./Entity.js";
 
 export default class World {
     get canvas(): HTMLCanvasElement;
@@ -11,8 +11,8 @@ export default class World {
 
     init(canvas: HTMLCanvasElement): void;
 
-    addEntity(entity: Entity): void;
-    removeEntity(entity: Entity): void;
+    addEntity<T extends Entity>(entity: T): T;
+    removeEntity<T extends Entity>(entity: T): void;
 
     getEntitiesByName(name: string): Entity[];
     getEntitiesByTag(tag: string): Entity[];

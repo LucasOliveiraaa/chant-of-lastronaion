@@ -1,7 +1,7 @@
-import Assets from "./engine/assets.js";
+import Assets from "./engine/Assets.js";
 import SpriteRenderer from "./engine/components/SpriteRenderer.js";
 import { range } from "./engine/lib/sprite.js";
-import World from "./engine/world.js";
+import World from "./engine/World.js";
 import Player from "./game/entities/player.js";
 
 const world = World.getInstance();

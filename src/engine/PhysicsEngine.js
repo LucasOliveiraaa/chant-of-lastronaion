@@ -1,7 +1,7 @@
 import Rigidbody from "./components/Rigidbody.js";
 import Collider from "./components/Collider.js";
-import Vector2 from "./vector2.js";
-import World from "./world.js";
+import Vector2 from "./Vector2.js";
+import World from "./World.js";
 
 const MAX_DELTA_TIME = 1 / 30;
 const MAX_SUBSTEPS = 10;
@@ -34,6 +34,10 @@ export default class PhysicsEngine {
             this._detectAndCorrect(bodies, frameContacts);
         }
 
+        for (const body of bodies) {
+            body.rb?.force.set(0, 0);
+        }
+
         this._dispatchEvents(frameContacts);
     }
 
@@ -42,7 +46,6 @@ export default class PhysicsEngine {
         const byEntity = new Map();
 
         for (const [entity, rb] of world.getComponents(Rigidbody)) {
-            if (!rb.velocity) rb.velocity = new Vector2(0, 0);
             byEntity.set(entity, { entity, rb, collider: null });
         }
 
@@ -93,12 +96,12 @@ export default class PhysicsEngine {
         for (const body of bodies) {
             if (body.isStatic) continue;
 
-            const { velocity } = body.rb;
+            const { velocity, force } = body.rb;
             const cfg = body.rb.config;
             const gs = cfg.gravityScale ?? 1;
 
-            velocity.x += this.gravity.x * gs * h;
-            velocity.y += this.gravity.y * gs * h;
+            velocity.x += (this.gravity.x * gs + force.x * body.invMass) * h;
+            velocity.y += (this.gravity.y * gs + force.y * body.invMass) * h;
 
             const damping = 1 / (1 + (cfg.linearDrag ?? 0) * h);
             velocity.x *= damping;
@@ -196,20 +199,11 @@ export default class PhysicsEngine {
     }
 
     _center(body) {
-        const { position, size } = body.entity;
-        const { offset } = body.collider.config;
-        return {
-            x: position.x + size.x / 2 + (offset?.x ?? 0),
-            y: position.y + size.y / 2 + (offset?.y ?? 0),
-        };
+        return body.collider.getCenter(body.entity);
     }
 
     _bounds(body) {
-        const c = this._center(body);
-        const cfg = body.collider.config;
-        const hx = cfg.type === "circle" ? cfg.radius : cfg.size.x / 2;
-        const hy = cfg.type === "circle" ? cfg.radius : cfg.size.y / 2;
-        return { minX: c.x - hx, maxX: c.x + hx, minY: c.y - hy, maxY: c.y + hy };
+        return body.collider.getBounds(body.entity);
     }
 
     _narrowPhase(a, b) {

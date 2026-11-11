@@ -1,8 +1,8 @@
-import Assets from "../assets.js";
-import Component from "../component.js";
+import Assets from "../Assets.js";
+import Component from "../Component.js";
 import { getSpriteBounds, renderSprite } from "../lib/sprite.js";
-import Vector2 from "../vector2.js";
-import World from "../world.js";
+import Vector2 from "../Vector2.js";
+import World from "../World.js";
 
 const MAX_TRANSITIONS_PER_UPDATE = 100;
 
@@ -15,8 +15,8 @@ export default class SpriteRenderer extends Component {
         super();
         this.asset = typeof source === "string" ? Assets.get(source) : source;
         this.config = {
-            gap: Vector2.ZERO,
-            margin: Vector2.ZERO,
+            gap: Vector2.zero(),
+            margin: Vector2.zero(),
             cols: 1,
             rows: 1,
             ...config,

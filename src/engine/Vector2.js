@@ -1,8 +1,27 @@
 export default class Vector2 {
-    static ZERO = new Vector2(0, 0);
-    static ONE = new Vector2(1, 1);
-    static X = new Vector2(1, 0);
-    static Y = new Vector2(0, 1);
+    static zero() {
+        return new Vector2(0, 0);
+    }
+
+    static one() {
+        return new Vector2(1, 1);
+    }
+    
+    static up() {
+        return new Vector2(0, -1);
+    }
+
+    static down() {
+        return new Vector2(0, 1);
+    }
+
+    static left() {
+        return new Vector2(-1, 0);
+    }
+
+    static right() {
+        return new Vector2(1, 0);
+    }
 
     constructor(x, y) {
         this.x = x;
@@ -44,6 +63,12 @@ export default class Vector2 {
 
     length() {
         return Math.sqrt(this.x * this.x + this.y * this.y);
+    }
+
+    normalize() {
+        const length = this.length();
+        if (length === 0) return new Vector2(0, 0);
+        return new Vector2(this.x / length, this.y / length);
     }
 
     distanceTo(vector) {

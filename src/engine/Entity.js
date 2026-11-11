@@ -1,4 +1,4 @@
-import Vector2 from "./vector2.js";
+import Vector2 from "./Vector2.js";
 
 export default class Entity {
     components = [];
@@ -6,7 +6,7 @@ export default class Entity {
     name = null;
     tags = new Set();
 
-    constructor(position = Vector2.ZERO, size = Vector2.ONE) {
+    constructor(position = Vector2.zero(), size = Vector2.one()) {
         this.position = position;
         this.size = size;
     }

@@ -1,9 +1,9 @@
 import Collider from "../../engine/components/Collider.js";
 import Rigidbody from "../../engine/components/Rigidbody.js";
 import SpriteRenderer from "../../engine/components/SpriteRenderer.js";
-import Entity from "../../engine/entity.js";
-import Input from "../../engine/input.js";
-import Vector2 from "../../engine/vector2.js";
+import Entity from "../../engine/Entity.js";
+import Input from "../../engine/Input.js";
+import Vector2 from "../../engine/Vector2.js";
 
 const SPEED = 100;
 
@@ -14,9 +14,9 @@ export default class Player extends Entity {
         super(new Vector2(0, 0), new Vector2(100, 100));
 
         this.rigidbody = this.addComponent(new Rigidbody({ mass: 1, gravityScale: 0 }));
-        this.rigidbody.velocity = new Vector2(0, 0);
-
         this.addComponent(new Collider({ type: "square", size: this.size }));
+
+        Collider.debug = true;
     }
 
     update(deltaTime) {

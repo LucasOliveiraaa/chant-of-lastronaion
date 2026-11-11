@@ -1,5 +1,5 @@
-import Component from "../component.js";
-import World from "../world.js";
+import Component from "../Component.js";
+import World from "../World.js";
 
 export default class SolidRenderer extends Component {
     constructor(color) {

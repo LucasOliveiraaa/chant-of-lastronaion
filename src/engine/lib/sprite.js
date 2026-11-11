@@ -1,4 +1,4 @@
-import Vector2 from "../vector2.js";
+import Vector2 from "../Vector2.js";
 
 export function getSpriteBounds(spriteSize, config) {
     const { x: width, y: height } = spriteSize;

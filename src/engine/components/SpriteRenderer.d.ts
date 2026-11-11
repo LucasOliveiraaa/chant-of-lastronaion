@@ -1,6 +1,6 @@
-import type Component from "../component.js";
-import type { ImageAsset } from "../assets.js";
-import type Vector2 from "../vector2.js";
+import type Component from "../Component.js";
+import type { ImageAsset } from "../Assets.js";
+import type Vector2 from "../Vector2.js";
 
 export type AnimationConfig = {
     /**

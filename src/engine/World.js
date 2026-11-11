@@ -1,5 +1,5 @@
-import Input from "./input.js";
-import PhysicsEngine from "./physics.js";
+import Input from "./Input.js";
+import PhysicsEngine from "./PhysicsEngine.js";
 
 export default class World {
     static instance = null;
@@ -8,10 +8,6 @@ export default class World {
     lastTime = null;
     physics = new PhysicsEngine();
 
-    /**
-     * Returns the singleton instance of the World class.
-     * @returns {World}
-     */
     static getInstance() {
         if (!World.instance) {
             World.instance = new World();
@@ -29,19 +25,11 @@ export default class World {
         Input.init(canvas);
     }
 
-    /**
-     * Adds an entity to the world.
-     * @param {import("./entity.js").default} entity 
-     */
     addEntity(entity) {
         this.entities.push(entity);
         return entity;
     }
 
-    /**
-     * Removes an entity from the world.
-     * @param {import("./entity.js").default} entity 
-     */
     removeEntity(entity) {
         const index = this.entities.indexOf(entity);
         if (index !== -1) {
@@ -49,20 +37,10 @@ export default class World {
         }
     }
 
-    /**
-     * Gets all entities with the specified name.
-     * @param {string} name 
-     * @returns {import("./entity.js").default[]}
-     */
     getEntitiesByName(name) {
         return this.entities.filter(entity => entity.name === name);
     }
     
-    /**
-     * Gets all entities with the specified tag.
-     * @param {string} tag 
-     * @returns {import("./entity.js").default[]}
-     */
     getEntitiesByTag(tag) {
         return this.entities.filter(entity => entity.tags.has(tag));
     }

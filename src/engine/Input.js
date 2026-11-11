@@ -1,4 +1,4 @@
-import Vector2 from "./vector2.js";
+import Vector2 from "./Vector2.js";
 
 export default class Input {
     static instance = null;
