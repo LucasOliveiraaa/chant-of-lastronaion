@@ -4,7 +4,7 @@ export default class Entity {
     components = [];
 
     name = null;
-    id = null;
+    tags = new Set();
 
     constructor(position = Vector2.ZERO, size = Vector2.ONE) {
         this.position = position;
@@ -39,5 +39,17 @@ export default class Entity {
 
     update(deltaTime) {
         // Update the entity's position or state
+    }
+
+    onCollisionEnter(otherEntity) {
+        // Handle collision with another entity
+    }
+
+    onCollisionStay(otherEntity) {
+        // Handle ongoing collision with another entity
+    }
+    
+    onCollisionExit(otherEntity) {
+        // Handle end of collision with another entity
     }
 }

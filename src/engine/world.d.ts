@@ -3,6 +3,7 @@ import type Entity from "./entity.js";
 export default class World {
     get canvas(): HTMLCanvasElement;
     get ctx(): CanvasRenderingContext2D;
+    get entities(): Entity[];
 
     private constructor();
     
@@ -13,8 +14,10 @@ export default class World {
     addEntity(entity: Entity): void;
     removeEntity(entity: Entity): void;
 
-    getEntitiesById(id: string): Entity[];
     getEntitiesByName(name: string): Entity[];
+    getEntitiesByTag(tag: string): Entity[];
+
+    getComponents<T>(componentClass: new (...args: any[]) => T): [Entity, T][];
 
     run(): void;
 }

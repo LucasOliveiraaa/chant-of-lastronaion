@@ -1,10 +1,12 @@
 import Input from "./input.js";
+import PhysicsEngine from "./physics.js";
 
 export default class World {
     static instance = null;
 
     entities = [];
-    lastTime = 0;
+    lastTime = null;
+    physics = new PhysicsEngine();
 
     /**
      * Returns the singleton instance of the World class.
@@ -46,15 +48,6 @@ export default class World {
             this.entities.splice(index, 1);
         }
     }
-    
-    /**
-     * Gets all entities with the specified ID.
-     * @param {string} id 
-     * @returns {import("./entity.js").default[]}
-     */
-    getEntitiesById(id) {
-        return this.entities.filter(entity => entity.id === id);
-    }
 
     /**
      * Gets all entities with the specified name.
@@ -63,6 +56,26 @@ export default class World {
      */
     getEntitiesByName(name) {
         return this.entities.filter(entity => entity.name === name);
+    }
+    
+    /**
+     * Gets all entities with the specified tag.
+     * @param {string} tag 
+     * @returns {import("./entity.js").default[]}
+     */
+    getEntitiesByTag(tag) {
+        return this.entities.filter(entity => entity.tags.has(tag));
+    }
+
+    getComponents(componentClass) {
+        const components = [];
+        for (const entity of this.entities) {
+            const component = entity.getComponent(componentClass);
+            if (component) {
+                components.push([entity, component]);
+            }
+        }
+        return components;
     }
 
     resize() {
@@ -73,11 +86,16 @@ export default class World {
     }
 
     run() {
+        if (!this.lastTime) {
+            this.lastTime = performance.now();
+        }
         const now = performance.now();
         const deltaTime = (now - this.lastTime) / 1000; // Convert to seconds
         this.lastTime = now;
 
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        this.physics.update(deltaTime);
 
         for (const entity of this.entities) {
             entity.__update(deltaTime);
