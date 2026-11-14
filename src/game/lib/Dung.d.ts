@@ -1,4 +1,4 @@
-import type Vector2 from "../../engine/Vector2.js";
+import type Vector2 from "../../engine/math/Vector2.js";
 
 export type RoomId = number;
 export type TileId = number;

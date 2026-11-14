@@ -1,6 +1,7 @@
-import type Component from "../Component.js";
-import type { ImageAsset } from "../Assets.js";
-import type Vector2 from "../Vector2.js";
+import type Component from "../core/Component.js";
+import type { ImageAsset } from "../assets/Assets.js";
+import type { SpriteId } from "../assets/Sprites.js";
+import type Vector2 from "../math/Vector2.js";
 
 export type AnimationConfig = {
     /**
@@ -34,18 +35,5 @@ export type SpriteSheetConfig = {
 };
 
 export default class SpriteRenderer extends Component {
-    readonly currentAnimation: string | null;
-
-    readonly asset: ImageAsset;
-
-    /** Accepts a loaded asset, or the key of an asset loaded through `Assets`. */
-    constructor(source: ImageAsset | string, config?: SpriteSheetConfig);
-
-    update(target: any, deltaTime: number): void;
-
-    /**
-     * Switches to the given animation. Does nothing if it is already playing,
-     * unless `restart` is true. Throws if the animation does not exist.
-     */
-    setAnimation(name: string, restart?: boolean): void;
+    setSprite(sprite: SpriteId): void;
 }

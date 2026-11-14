@@ -2,7 +2,7 @@
 // Eu, Lucas, estou implementando em TypeScript primeiro porque não vejo como fazer sem TIPOOSSSSS.
 // Basicamente esse algoritimo é uma modificação de um Wave-function Collapser. Isso é necessário já que o WFC não tem a ideia de espaços em branco ou o tamanho esperado para uma dungeon, então eu adicionei algumas patches para que ele gere uma dungeon válida, sem salas órfãs (sem conexões com a sala inicial) e com um tamanho controlável.
 
-import Vector2 from "./src/engine/vector2.js";
+import Vector2 from "../../engine/math/Vector2.js";
 
 const DIRS = [
     { name: "top", opposite: "bottom", dx: 0, dy: -1 },

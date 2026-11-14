@@ -1,29 +1,38 @@
-import Assets from "./engine/Assets.js";
-import SpriteRenderer from "./engine/components/SpriteRenderer.js";
-import { range } from "./engine/lib/sprite.js";
-import World from "./engine/World.js";
-import Player from "./game/entities/player.js";
+import World from "./engine/core/World.js";
+import GameObject from "./engine/core/GameObject.js";
+import SpriteRenderer from "./engine/rendering/SpriteRenderer.js";
+import Animator from "./engine/animation/Animator.js";
+import PlayerMovement from "./game/components/PlayerMovement.js";
+import Rigidbody from "./engine/physics/Rigidbody.js";
+import SquareCollider from "./engine/physics/SquareCollider.js";
+import SolidRenderer from "./engine/rendering/SolidRenderer.js";
 
-const world = World.getInstance();
-world.init(document.getElementById("game"));
+const canvas = document.getElementById("game");
 
-await Assets.load({
-    player: "./assets/player-spritesheet.png",
-});
+function createWall(x, y, width, height, color = "#00FF00") {
+    const wall = new GameObject("Wall", SolidRenderer, SquareCollider, Rigidbody);
+    wall.transform.position.set(x, y);
+    wall.transform.scale.set(width, height);
 
-const player = world.addEntity(new Player());
+    wall.getComponent(SolidRenderer).color = color;
+    wall.getComponent(SquareCollider).debug = true;
+    const wallRigidbody = wall.getComponent(Rigidbody);
+    wallRigidbody.gravityScale = 0;
+    wallRigidbody.static = true;
+}
 
-player.addComponent(new SpriteRenderer(Assets.get("player"), {
-    rows: 54,
-    cols: 13,
-    animations: {
-        idle: { frames: [312, 313], duration: 0.5 },
-        runNorth: { frames: range(494, 501), duration: 0.5 },
-        runWest: { frames: range(507, 514), duration: 0.5 },
-        runSouth: { frames: range(520, 527), duration: 0.5 },
-        runEast: { frames: range(533, 540), duration: 0.5 },
-    },
-    defaultAnimation: "idle",
-}));
+async function main() {
+    const player = new GameObject("Player", SpriteRenderer, Animator, Rigidbody, SquareCollider, PlayerMovement);
+    player.transform.position.set(100, 100);
 
-world.run();
+    createWall(0, 0, 500, 20);
+    createWall(0, 0, 20, 500);
+    createWall(0, 480, 500, 20);
+    createWall(480, 0, 20, 500);
+
+    const world = World.getInstance();
+    await world.init(canvas);
+    world.run();
+}
+
+main()
