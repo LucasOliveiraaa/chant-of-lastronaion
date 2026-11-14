@@ -2,7 +2,10 @@ import Component from "../core/Component.js";
 import Animations from "./Animations.js";
 import Time from "../core/Time.js";
 import SpriteRenderer from "../rendering/SpriteRenderer.js";
+import UISprite from "../ui/UISprite.js";
 
+// Animates whatever displays a sprite on the same GameObject: a SpriteRenderer in the
+// world or a UISprite in the UI (like Unity's Animator on a SpriteRenderer or an Image).
 export default class Animator extends Component {
     currentAnimationName = null;
     currentAnimation = null;
@@ -18,7 +21,9 @@ export default class Animator extends Component {
     get spriteTarget() {
         if (!this.__spriteTarget || this.__spriteTarget.isDestroyed) {
             this.__spriteTarget =
-                this.gameObject?.getComponent(SpriteRenderer) ?? null;
+                this.gameObject?.getComponent(SpriteRenderer) ??
+                this.gameObject?.getComponent(UISprite) ??
+                null;
         }
         return this.__spriteTarget;
     }
