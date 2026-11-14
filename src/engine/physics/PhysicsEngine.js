@@ -58,12 +58,14 @@ export default class PhysicsEngine {
         const world = World.getInstance();
         const byObject = new Map();
 
-        for (const [gameObject, rb] of world.getComponents(Rigidbody)) {
-            byObject.set(gameObject, { gameObject, rb, collider: null });
+        for (const rb of world.findObjectsByType(Rigidbody)) {
+            if (byObject.has(rb.gameObject)) continue;
+            byObject.set(rb.gameObject, { gameObject: rb.gameObject, rb, collider: null });
         }
 
         for (const type of COLLIDER_TYPES) {
-            for (const [gameObject, collider] of world.getComponents(type)) {
+            for (const collider of world.findObjectsByType(type)) {
+                const gameObject = collider.gameObject;
                 const body = byObject.get(gameObject);
                 if (!body) byObject.set(gameObject, { gameObject, rb: null, collider });
                 else if (!body.collider) body.collider = collider;
@@ -75,8 +77,9 @@ export default class PhysicsEngine {
             const { rb, collider } = body;
 
             body.id = this._id(body.gameObject);
-            body.isStatic = !rb || !!rb.static;
-            body.invMass = body.isStatic ? 0 : 1 / (rb.mass > 0 ? rb.mass : 1);
+            body.isStatic = !rb || rb.bodyType === "static";
+            body.isKinematic = !body.isStatic && rb.bodyType === "kinematic";
+            body.invMass = body.isStatic || body.isKinematic ? 0 : 1 / (rb.mass > 0 ? rb.mass : 1);
             body.bounciness = rb ? rb.bounciness ?? 0 : 0;
             body.friction = rb ? rb.friction ?? 0 : null;
 
@@ -110,10 +113,10 @@ export default class PhysicsEngine {
         let steps = 1;
         for (const body of bodies) {
             if (body.isStatic || !body.collider) continue;
-            if (body.rb.collisionDetection !== "continuous") continue;
+            if (body.rb.collisionDetectionMode !== "continuous") continue;
 
             const v = body.rb.velocity;
-            const gs = body.rb.gravityScale ?? 1;
+            const gs = body.isKinematic ? 0 : body.rb.gravityScale ?? 1;
             const vx = v.x + this.gravity.x * gs * dt;
             const vy = v.y + this.gravity.y * gs * dt;
             const distance = Math.hypot(vx, vy) * dt;
@@ -131,12 +134,18 @@ export default class PhysicsEngine {
             if (body.isStatic) continue;
 
             const { velocity, force } = body.rb;
+
+            if (body.isKinematic) {
+                this._move(body, velocity.x * h, velocity.y * h);
+                continue;
+            }
+
             const gs = body.rb.gravityScale ?? 1;
 
             velocity.x += (this.gravity.x * gs + force.x * body.invMass) * h;
             velocity.y += (this.gravity.y * gs + force.y * body.invMass) * h;
 
-            const damping = 1 / (1 + (body.rb.linearDrag ?? 0) * h);
+            const damping = 1 / (1 + (body.rb.linearDamping ?? 0) * h);
             velocity.x *= damping;
             velocity.y *= damping;
 
@@ -223,17 +232,17 @@ export default class PhysicsEngine {
 
         const correction = (Math.max(depth - PENETRATION_SLOP, 0) / invSum) * CORRECTION_PERCENT;
         if (correction > 0) {
-            if (!a.isStatic) this._move(a, -nx * correction * a.invMass, -ny * correction * a.invMass);
-            if (!b.isStatic) this._move(b, nx * correction * b.invMass, ny * correction * b.invMass);
+            if (a.invMass > 0) this._move(a, -nx * correction * a.invMass, -ny * correction * a.invMass);
+            if (b.invMass > 0) this._move(b, nx * correction * b.invMass, ny * correction * b.invMass);
         }
     }
 
     _applyImpulse(a, b, ix, iy) {
-        if (!a.isStatic) {
+        if (a.invMass > 0) {
             a.rb.velocity.x -= ix * a.invMass;
             a.rb.velocity.y -= iy * a.invMass;
         }
-        if (!b.isStatic) {
+        if (b.invMass > 0) {
             b.rb.velocity.x += ix * b.invMass;
             b.rb.velocity.y += iy * b.invMass;
         }

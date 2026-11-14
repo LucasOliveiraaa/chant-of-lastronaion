@@ -1,6 +1,6 @@
 export default class Component {
     observers = new Map();
-    target = null;
+    gameObject = null;
 
     __state = "created";
     __startPromise = null;
@@ -17,8 +17,8 @@ export default class Component {
         return this.__state;
     }
 
-    setup(target) {
-        this.gameObject = target;
+    setup(gameObject) {
+        this.gameObject = gameObject;
 
         this.on("OnCollisionEnter", (other) => {
             this.onCollisionEnter?.(other);

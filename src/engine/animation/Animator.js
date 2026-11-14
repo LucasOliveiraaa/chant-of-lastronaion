@@ -12,20 +12,30 @@ export default class Animator extends Component {
 
     finished = false;
 
-    sr = null;
+    __spriteTarget = null;
 
-    setAnimation(animationName) {
-        if (this.currentAnimationName === animationName) return;
+    // Resolved lazily, so setAnimation() works even before this Animator's start().
+    get spriteTarget() {
+        if (!this.__spriteTarget || this.__spriteTarget.isDestroyed) {
+            this.__spriteTarget =
+                this.gameObject?.getComponent(SpriteRenderer) ?? null;
+        }
+        return this.__spriteTarget;
+    }
 
-        const anim = Animations.getInstance().getAnimation(animationName);
+    // Accepts the clip's name or id.
+    setAnimation(animation) {
+        if (this.currentAnimationName === animation || this.currentAnimation?.id === animation) return;
 
-        if (!anim || !anim.animation.frames.length) {
-            console.warn(`Animation "${animationName}" not found or empty.`);
+        const anim = Animations.getInstance().getAnimation(animation);
+
+        if (!anim || !anim.frames.length) {
+            console.warn(`Animation "${animation}" not found or empty.`);
             return;
         }
 
-        this.currentAnimationName = animationName;
-        this.currentAnimation = anim.animation;
+        this.currentAnimationName = anim.name;
+        this.currentAnimation = anim;
 
         this.currentFrameIndex = 0;
         this.currentFrameTime = 0;
@@ -35,7 +45,7 @@ export default class Animator extends Component {
     }
 
     start() {
-        this.sr = this.gameObject.getComponent(SpriteRenderer);
+        this.updateSprite();
     }
 
     update() {
@@ -72,9 +82,9 @@ export default class Animator extends Component {
     }
 
     updateSprite() {
-        if (!this.sr || !this.currentAnimation) return;
+        if (!this.currentAnimation) return;
 
-        this.sr.setSprite(
+        this.spriteTarget?.setSprite(
             this.currentAnimation.frames[this.currentFrameIndex].spriteId
         );
     }

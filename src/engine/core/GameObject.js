@@ -6,8 +6,7 @@ export default class GameObject {
     components = new Map();
 
     name = null;
-    tag = null;
-    tags = new Set();
+    tag = "Untagged";
 
     transform = new Transform();
 
@@ -16,12 +15,31 @@ export default class GameObject {
 
     constructor(name = "Game Object", ...components) {
         this.name = name;
+        this.transform.gameObject = this;
 
         for (const component of components) {
             this.addComponent(component);
         }
 
-        World.getInstance().add(this);
+        World.getInstance().addGameObject(this);
+    }
+
+    // ---- Unity's static lookups ----------------------------------------
+
+    static find(name) {
+        return World.getInstance().gameObjects.find(gameObject => gameObject.name === name) ?? null;
+    }
+
+    static findWithTag(tag) {
+        return World.getInstance().gameObjects.find(gameObject => gameObject.tag === tag) ?? null;
+    }
+
+    static findGameObjectsWithTag(tag) {
+        return World.getInstance().gameObjects.filter(gameObject => gameObject.tag === tag);
+    }
+
+    compareTag(tag) {
+        return this.tag === tag;
     }
 
     sendMessage(message, ...args) {
@@ -37,7 +55,6 @@ export default class GameObject {
     addComponent(componentClass) {
         const component = new componentClass();
 
-        console.log(component);
         component.setup(this);
 
         component.awake?.();
@@ -102,6 +119,14 @@ export default class GameObject {
     }
 
     destroy() {
+        // Like Unity, children go with their parent. Done first, while the transforms
+        // still point at their GameObjects.
+        const transform = this.transform;
+        for (const child of [...transform.children]) {
+            child.gameObject?.destroy();
+        }
+        transform.setParent(null, false);
+
         for (const componentList of this.components.values()) {
             for (const component of componentList) {
                 component.__destroy();
@@ -110,7 +135,7 @@ export default class GameObject {
 
         this.components.clear();
 
-        World.getInstance().remove(this);
+        World.getInstance().removeGameObject(this);
     }
 
     __queueComponentStart(component) {

@@ -3,7 +3,8 @@ import type GameObject from "./GameObject.js";
 type ComponentState = "created" | "starting" | "started" | "failed" | "destroyed";
 
 export default class Component {
-    protected gameObject: GameObject;
+    /** The GameObject this component is attached to. Null before setup and after destroy. */
+    readonly gameObject: GameObject;
 
     constructor();
 
@@ -23,4 +24,9 @@ export default class Component {
     lateUpdate(): void;
 
     onDestroy(): void;
+
+    /** Optional messages sent by the physics engine with the other GameObject. */
+    onCollisionEnter?(other: GameObject): void;
+    onCollisionStay?(other: GameObject): void;
+    onCollisionExit?(other: GameObject): void;
 }

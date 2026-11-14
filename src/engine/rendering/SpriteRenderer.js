@@ -6,17 +6,24 @@ export default class SpriteRenderer extends Component {
     currentSprite = null;
     spriteSheet = null;
 
-    setSprite(spriteId) {
-        if (this.currentSprite?.id === spriteId) return;
-
-        const sprite = Sprites.getInstance().getSprite(spriteId);
-        if (!sprite) {
-            console.warn(`Sprite with ID ${spriteId} not found.`);
+    // Accepts the sprite's id or name; null clears it.
+    setSprite(spriteIdOrName) {
+        if (spriteIdOrName === null || spriteIdOrName === undefined) {
+            this.currentSprite = null;
+            this.spriteSheet = null;
             return;
         }
-        
+
+        const sprites = Sprites.getInstance();
+        const sprite = sprites.getSprite(spriteIdOrName);
+        if (!sprite) {
+            console.warn(`Sprite "${spriteIdOrName}" not found.`);
+            return;
+        }
+        if (sprite === this.currentSprite) return;
+
         this.currentSprite = sprite;
-        this.spriteSheet = Sprites.getInstance().getSpriteSheet(sprite.spriteSheetId);
+        this.spriteSheet = sprites.getSpriteSheet(sprite.spriteSheetId);
     }
 
     update() {

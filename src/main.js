@@ -18,7 +18,7 @@ function createWall(x, y, width, height, color = "#00FF00") {
     wall.getComponent(SquareCollider).debug = true;
     const wallRigidbody = wall.getComponent(Rigidbody);
     wallRigidbody.gravityScale = 0;
-    wallRigidbody.static = true;
+    wallRigidbody.bodyType = "static";
 }
 
 async function main() {

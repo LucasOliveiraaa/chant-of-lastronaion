@@ -1,5 +1,6 @@
 import type Component from "../core/Component.js";
 import type GameObject from "../core/GameObject.js";
+import type AABB from "../math/AABB.js";
 import type Vector2 from "../math/Vector2.js";
 
 export default class CircleCollider extends Component {

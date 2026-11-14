@@ -2,11 +2,15 @@ import Input from "../input/Input.js";
 import Time from "./Time.js";
 import PhysicsEngine from "../physics/PhysicsEngine.js";
 
+// The single scene plus the game loop. GameObjects register themselves on construction.
 export default class World {
     static instance = null;
 
     gameObjects = [];
     physics = new PhysicsEngine();
+
+    canvas = null;
+    ctx = null;
 
     __running = false;
     __initialized = false;
@@ -34,8 +38,8 @@ export default class World {
         this.resize();
         window.addEventListener("resize", this.resize.bind(this));
 
-        Input.init(canvas);
-        Time.startTime();
+        Input.__init(canvas);
+        Time.__start();
 
         this.__initialized = true;
 
@@ -44,7 +48,7 @@ export default class World {
         );
     }
 
-    add(gameObject) {
+    addGameObject(gameObject) {
         if (this.gameObjects.includes(gameObject)) {
             return gameObject;
         }
@@ -58,7 +62,7 @@ export default class World {
         return gameObject;
     }
 
-    remove(gameObject) {
+    removeGameObject(gameObject) {
         const index = this.gameObjects.indexOf(gameObject);
 
         if (index !== -1) {
@@ -66,27 +70,12 @@ export default class World {
         }
     }
 
-    getGameObjectsByName(name) {
-        return this.gameObjects.filter(
-            gameObject => gameObject.name === name
-        );
-    }
-
-    getGameObjectsByTag(tag) {
-        return this.gameObjects.filter(
-            gameObject => gameObject.tags.has(tag)
-        );
-    }
-
-    getComponents(componentClass) {
+    // Every component of the given type in the scene (Unity's Object.FindObjectsByType).
+    findObjectsByType(componentClass) {
         const components = [];
 
         for (const gameObject of this.gameObjects) {
-            const component = gameObject.getComponent(componentClass);
-
-            if (component) {
-                components.push([gameObject, component]);
-            }
+            components.push(...gameObject.getComponents(componentClass));
         }
 
         return components;
@@ -108,10 +97,11 @@ export default class World {
 
         this.__running = true;
 
-        const frame = () => {
+        const frame = (now) => {
             if (!this.__running) return;
 
-            Time.tick();
+            Time.__tick(now);
+            Input.__beginFrame(Time.unscaledDeltaTime);
             this.__accumulatedTime += Time.deltaTime;
 
             this.ctx.clearRect(
@@ -123,12 +113,15 @@ export default class World {
 
             const objects = [...this.gameObjects];
 
+            // deltaTime is capped by Time.maximumDeltaTime, which bounds the steps per frame.
             while (this.__accumulatedTime >= Time.fixedDeltaTime) {
-                this.physics.fixedUpdate();
+                Time.__fixedStep(() => {
+                    this.physics.fixedUpdate();
 
-                for (const gameObject of objects) {
-                    gameObject.fixedUpdate();
-                }
+                    for (const gameObject of objects) {
+                        gameObject.fixedUpdate();
+                    }
+                });
 
                 this.__accumulatedTime -= Time.fixedDeltaTime;
             }

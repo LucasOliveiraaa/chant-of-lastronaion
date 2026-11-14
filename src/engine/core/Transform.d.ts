@@ -1,5 +1,4 @@
 import type Component from "./Component.js";
-import type GameObject from "./GameObject.js";
 import type Vector2 from "../math/Vector2.js";
 
 export default class Transform extends Component {
@@ -17,8 +16,6 @@ export default class Transform extends Component {
 
     /** Position in world space. A getter returns a new vector, so assign to it to move the transform. */
     worldPosition: Vector2;
-
-    constructor(position?: Vector2, scale?: Vector2);
 
     /**
      * Changes the parent, or detaches it with null.
