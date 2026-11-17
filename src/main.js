@@ -12,6 +12,9 @@ import UICanvas from "./engine/ui/UICanvas.js";
 import Health from "./game/components/PlayerState.js";
 import Enemy from "./game/components/Enemy.js";
 import PlayerState from "./game/components/PlayerState.js";
+import { createProjectile } from "./game/components/Projectile.js";
+import Vector2 from "./engine/math/Vector2.js";
+import EnemyState from "./game/components/EnemyState.js";
 
 const canvas = document.getElementById("game");
 
@@ -32,13 +35,15 @@ async function main() {
     player.tag = "player";
     player.transform.position.set(100, 100);
 
-    const enemy = new GameObject("Enemy", SolidRenderer, Rigidbody, SquareCollider, Enemy);
+    const enemy = new GameObject("Enemy", SolidRenderer, Rigidbody, SquareCollider, Enemy, EnemyState);
     enemy.transform.position.set(200, 200);
 
     createWall(0, 0, 500, 20);
     createWall(0, 0, 20, 500);
     createWall(0, 480, 500, 20);
     createWall(480, 0, 20, 500);
+
+    createProjectile(new Vector2(300, 300), "enemy", 1, new Vector2(-1, 0));
 
     const world = World.getInstance();
     await world.init(canvas);

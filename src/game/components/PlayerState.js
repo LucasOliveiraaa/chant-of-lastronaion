@@ -25,31 +25,31 @@ export default class PlayerState extends Component {
     }
 
     onCollisionEnter(other) {
-        if(other.name == "moeda-1") {
+        if(other.name == "interactable-moeda-1") {
             this.addCoins(1);
             other.destroy();
         }
-        if (other.name == "moeda-5") {
+        if (other.name == "interactable-moeda-5") {
             this.addCoins(5);
             other.destroy();
         }
-        if (other.name == "moeda-10") {
+        if (other.name == "interactable-moeda-10") {
             this.addCoins(10);
             other.destroy();
         }
-        if (other.name == "half-heart") {
+        if (other.name == "interactable-half-heart") {
             this.heal(0.5);
             other.destroy();
         }
-        if (other.name == "heart") {
+        if (other.name == "interactable-heart") {
             this.heal(1);
             other.destroy();
         }
-        if (other.name == "double-heart") {
+        if (other.name == "interactable-double-heart") {
             this.heal(2);
             other.destroy();
         }
-        if (other.name == "guitar") {
+        if (other.name == "interactable-guitar") {
             this.weapon = "guitar";
             other.destroy();
         }
