@@ -9,6 +9,9 @@ import SolidRenderer from "./engine/rendering/SolidRenderer.js";
 import RectTransform from "./engine/ui/RectTransform.js";
 import UIButton from "./engine/ui/UIButton.js";
 import UICanvas from "./engine/ui/UICanvas.js";
+import Health from "./game/components/PlayerState.js";
+import Enemy from "./game/components/Enemy.js";
+import PlayerState from "./game/components/PlayerState.js";
 
 const canvas = document.getElementById("game");
 
@@ -25,21 +28,17 @@ function createWall(x, y, width, height, color = "#00FF00") {
 }
 
 async function main() {
-    const player = new GameObject("Player", SpriteRenderer, Animator, Rigidbody, SquareCollider, PlayerMovement);
+    const player = new GameObject("Player", SolidRenderer, Animator, Rigidbody, SquareCollider, PlayerMovement, PlayerState);
+    player.tag = "player";
     player.transform.position.set(100, 100);
+
+    const enemy = new GameObject("Enemy", SolidRenderer, Rigidbody, SquareCollider, Enemy);
+    enemy.transform.position.set(200, 200);
 
     createWall(0, 0, 500, 20);
     createWall(0, 0, 20, 500);
     createWall(0, 480, 500, 20);
     createWall(480, 0, 20, 500);
-
-    const uiCanvas = new GameObject("UI", RectTransform, UICanvas);
-
-    const button = new GameObject("Button", RectTransform, UIButton);
-    button.transform.setParent(uiCanvas.transform);
-
-    button.transform.anchoredPosition.set(200, 200);
-    button.transform.sizeDelta.set(100, 50);
 
     const world = World.getInstance();
     await world.init(canvas);
