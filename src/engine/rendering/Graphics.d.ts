@@ -36,6 +36,8 @@ export default class Graphics {
     clip(x: number, y: number, width: number, height: number): void;
     clear(): void;
 
+    setTransform(a: number, b: number, c: number, d: number, e: number, f: number): void;
+
     fillRect(x: number, y: number, width: number, height: number, color: string): void;
     strokeRect(x: number, y: number, width: number, height: number, color: string, lineWidth?: number): void;
     fillRoundRect(x: number, y: number, width: number, height: number, radius: number, color: string): void;

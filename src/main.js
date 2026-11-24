@@ -8,10 +8,16 @@ import Vector2 from "./engine/math/Vector2.js";
 import { Player } from "./game/scripts/player/Player.js";
 import { Camera } from "./game/scripts/camera/Camera.js";
 import { Dungeon } from "./game/scripts/dungeon/Dungeon.js";
+import UICanvas from "./engine/ui/UICanvas.js";
+import { Hearts } from "./game/scripts/gui/Hearts.js";
 
 const canvas = document.getElementById("game");
 
 async function main() {
+    const ui = new GameObject("UI", UICanvas);
+    ui.tag = "ui";
+
+    GameObject.instantiate(Hearts);
     GameObject.instantiate(Camera);
     GameObject.instantiate(Player);
     // Builds the start chamber (the cell at world (0, 0)) and puts the player in it.

@@ -55,6 +55,11 @@ export default class TileManager extends Component {
             collider = null;
         }
         if (collider) collider.isTrigger = !this._tile.obstacle;
+
+        if (door && collider) {
+            collider.size.set(TILE_WIDTH * 0.5, TILE_WIDTH * 0.5);
+            collider.debug = true;
+        }
     }
 
     onTriggerEnter(other) {

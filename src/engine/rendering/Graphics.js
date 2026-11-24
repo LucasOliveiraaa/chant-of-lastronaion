@@ -61,6 +61,10 @@ export default class Graphics {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     }
 
+    setTransform(a, b, c, d, e, f) {
+        this.#ctx.setTransform(a, b, c, d, e, f);
+    }
+
     fillRect(x, y, width, height, color) {
         this.#set("fillStyle", color);
         this.#ctx.fillRect(x, y, width, height);

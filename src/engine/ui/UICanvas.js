@@ -83,10 +83,10 @@ export default class UICanvas extends Component {
         this._updateHover();
     }
 
-    // Called by the RenderingEngine after the world, the lighting and the gizmos.
     render(graphics) {
         for (const element of this.elements) {
             graphics.save();
+            graphics.setTransform(1, 0, 0, 1, 0, 0);
             element.render(graphics);
             graphics.restore();
         }
