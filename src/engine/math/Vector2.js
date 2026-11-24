@@ -76,4 +76,12 @@ export default class Vector2 {
         const dy = this.y - vector.y;
         return Math.sqrt(dx * dx + dy * dy);
     }
+
+    // Degrees; positive is clockwise on screen because Y points down.
+    rotate(degrees) {
+        const radians = degrees * Math.PI / 180;
+        const cos = Math.cos(radians);
+        const sin = Math.sin(radians);
+        return new Vector2(this.x * cos - this.y * sin, this.x * sin + this.y * cos);
+    }
 }

@@ -1,6 +1,8 @@
 import Input from "../input/Input.js";
 import Time from "./Time.js";
 import PhysicsEngine from "../physics/PhysicsEngine.js";
+import LightingEngine from "../lighting/LightingEngine.js";
+import RenderingEngine from "../rendering/RenderingEngine.js";
 
 // The single scene plus the game loop. GameObjects register themselves on construction.
 export default class World {
@@ -8,6 +10,8 @@ export default class World {
 
     gameObjects = [];
     physics = new PhysicsEngine();
+    lighting = new LightingEngine();
+    rendering = new RenderingEngine();
 
     canvas = null;
     ctx = null;
@@ -104,13 +108,6 @@ export default class World {
             Input.__beginFrame(Time.unscaledDeltaTime);
             this.__accumulatedTime += Time.deltaTime;
 
-            this.ctx.clearRect(
-                0,
-                0,
-                this.canvas.width,
-                this.canvas.height
-            );
-
             const objects = [...this.gameObjects];
 
             // deltaTime is capped by Time.maximumDeltaTime, which bounds the steps per frame.
@@ -133,6 +130,8 @@ export default class World {
             for (const gameObject of objects) {
                 gameObject.lateUpdate();
             }
+
+            this.rendering.render();
 
             this.__rafId = requestAnimationFrame(frame);
         };

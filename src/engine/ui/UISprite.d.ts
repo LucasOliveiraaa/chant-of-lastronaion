@@ -1,4 +1,5 @@
 import UIElement from "./UIElement.js";
+import type Graphics from "../rendering/Graphics.js";
 import type { Sprite, SpriteId, SpriteSheet } from "../assets/Sprites.js";
 
 /**
@@ -23,5 +24,5 @@ export default class UISprite extends UIElement {
     /** Shows the sprite with this id or name; null clears it. Same contract as SpriteRenderer.setSprite. */
     setSprite(sprite: SpriteId | string | null): void;
 
-    render(ctx: CanvasRenderingContext2D): void;
+    render(graphics: Graphics): void;
 }

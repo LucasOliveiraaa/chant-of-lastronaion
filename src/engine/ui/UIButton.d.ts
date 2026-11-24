@@ -1,4 +1,5 @@
 import UIElement from "./UIElement.js";
+import type Graphics from "../rendering/Graphics.js";
 import type { UIPointer } from "./UICanvas.js";
 
 export type UIButtonState = "normal" | "hover" | "pressed" | "disabled";
@@ -36,5 +37,5 @@ export default class UIButton extends UIElement {
 
     readonly state: UIButtonState;
 
-    render(ctx: CanvasRenderingContext2D): void;
+    render(graphics: Graphics): void;
 }

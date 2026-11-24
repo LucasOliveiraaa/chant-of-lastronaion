@@ -1,5 +1,5 @@
 import Vector2 from "../math/Vector2.js";
-import Assets from "./Assets.js";
+import Assets, { ImageAsset } from "./Assets.js";
 
 // Registry of sprite sheets and the sprites cut from them, addressed by id or name.
 // Ids come from counters and are never reused, so they stay valid after removals.
@@ -133,6 +133,27 @@ export default class Sprites {
         return spriteIds;
     }
 
+    // A sprite filled with one CSS color (e.g. "#FF0000"), drawn on a generated sheet, so no
+    // image file is needed. The sheet is named "solid:<color>:<width>x<height>" and shared by
+    // every sprite with the same color and size. Without a name the sprite takes the sheet's,
+    // so repeated calls return the same id.
+    createSolidSprite(width, height, color, name = null) {
+        if (!(width > 0) || !(height > 0)) {
+            throw new Error(`Solid sprite size must be positive, got ${width}x${height}.`);
+        }
+
+        const sheetName = `solid:${color}:${width}x${height}`;
+        if (this.spriteSheetNames.get(sheetName) === undefined) {
+            const canvas = createCanvas(width, height);
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = color;
+            ctx.fillRect(0, 0, width, height);
+            this.defineSpriteSheet(new ImageAsset(sheetName, null, canvas), sheetName);
+        }
+
+        return this.defineSprite(sheetName, Vector2.zero(), new Vector2(width, height), name ?? sheetName);
+    }
+
     getSpriteSheet(idOrName) {
         return this.spriteSheets.get(this.#resolveSheet(idOrName)) ?? null;
     }
@@ -178,4 +199,14 @@ export default class Sprites {
         if (typeof idOrName === "string") return this.spriteNames.get(idOrName);
         return this.sprites.has(idOrName) ? idOrName : undefined;
     }
+}
+
+function createCanvas(width, height) {
+    if (typeof document !== "undefined") {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        return canvas;
+    }
+    return new OffscreenCanvas(width, height);
 }

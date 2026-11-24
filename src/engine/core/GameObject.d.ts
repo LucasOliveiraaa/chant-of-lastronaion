@@ -1,5 +1,6 @@
 import type Component from "./Component";
 import type Transform from "./Transform";
+import type Vector2 from "../math/Vector2";
 
 type ComponentClass<T extends Component = Component> = new (...args: any[]) => T;
 
@@ -7,6 +8,9 @@ export default class GameObject {
     name: string;
     /** Single tag, like Unity. Default "Untagged". */
     tag: string;
+
+    /** True for a Prefab: a template outside the World that never starts or updates. */
+    readonly isPrefab: boolean;
 
     /** A Transform, or a RectTransform once one is added. */
     transform: Transform;
@@ -19,6 +23,15 @@ export default class GameObject {
 
     /** Creates the object, adds the components in order and registers it in the World. */
     constructor(name?: string, ...components: ComponentClass[]);
+
+    /**
+     * Unity's Object.Instantiate: copies the GameObject with its components and children.
+     */
+    static instantiate(original: GameObject): GameObject;
+    /** With instantiateInWorldSpace false (default) the original's local position is kept under the new parent; true keeps its world position. */
+    static instantiate(original: GameObject, parent: Transform | null, instantiateInWorldSpace?: boolean): GameObject;
+    /** Placed at the world position and rotation (degrees), optionally under parent. */
+    static instantiate(original: GameObject, position: Vector2, rotation: number, parent?: Transform | null): GameObject;
 
     compareTag(tag: string): boolean;
 

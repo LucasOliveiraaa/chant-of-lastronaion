@@ -10,12 +10,13 @@ export class ImageAsset {
         this.image = image;
     }
 
+    // An <img> reports its size in naturalWidth/Height; a generated canvas only has width/height.
     get width() {
-        return this.image.naturalWidth;
+        return this.image.naturalWidth ?? this.image.width;
     }
 
     get height() {
-        return this.image.naturalHeight;
+        return this.image.naturalHeight ?? this.image.height;
     }
 }
 

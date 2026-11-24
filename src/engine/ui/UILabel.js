@@ -26,14 +26,14 @@ export default class UILabel extends UIElement {
     }
 
     // The lines as they will be drawn, for the given (or current) font.
-    getLines(ctx) {
+    getLines(graphics) {
         const text = String(this.text ?? "");
         if (!text) return [];
 
         const paragraphs = text.split("\n");
         if (!this.wordWrap) return paragraphs;
 
-        ctx.font = this.font;
+        const font = this.font;
         const maxWidth = this.rect.w;
         const lines = [];
 
@@ -42,7 +42,7 @@ export default class UILabel extends UIElement {
             for (const word of paragraph.split(" ")) {
                 const candidate = line ? `${line} ${word}` : word;
                 // A single word wider than the rect stays on its own line.
-                if (line && ctx.measureText(candidate).width > maxWidth) {
+                if (line && graphics.measureText(candidate, font) > maxWidth) {
                     lines.push(line);
                     line = word;
                 } else {
@@ -54,8 +54,8 @@ export default class UILabel extends UIElement {
         return lines;
     }
 
-    render(ctx) {
-        const lines = this.getLines(ctx);
+    render(graphics) {
+        const lines = this.getLines(graphics);
         if (!lines.length) return;
 
         const { x, y, w, h } = this.rect;
@@ -70,19 +70,11 @@ export default class UILabel extends UIElement {
         if (this.align === "center") left = x + w / 2;
         else if (this.align === "right") left = x + w;
 
-        if (this.clip) {
-            ctx.beginPath();
-            ctx.rect(x, y, w, h);
-            ctx.clip();
-        }
+        if (this.clip) graphics.clip(x, y, w, h);
 
-        ctx.font = this.font;
-        ctx.fillStyle = this.color;
-        ctx.textAlign = this.align;
-        ctx.textBaseline = "middle";
-
+        const options = { font: this.font, color: this.color, align: this.align, baseline: "middle" };
         for (let i = 0; i < lines.length; i++) {
-            ctx.fillText(lines[i], left, top + step * (i + 0.5));
+            graphics.drawText(lines[i], left, top + step * (i + 0.5), options);
         }
     }
 }

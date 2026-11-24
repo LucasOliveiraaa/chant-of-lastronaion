@@ -54,7 +54,7 @@ export default class UIButton extends UIElement {
         return "normal";
     }
 
-    render(ctx) {
+    render(graphics) {
         const { x, y, w, h } = this.rect;
         const state = this.state;
 
@@ -65,27 +65,20 @@ export default class UIButton extends UIElement {
             normal: this.normalColor,
         }[state];
 
-        ctx.beginPath();
-        if (typeof ctx.roundRect === "function") {
-            ctx.roundRect(x, y, w, h, this.cornerRadius);
-        } else {
-            ctx.rect(x, y, w, h);
-        }
-        ctx.fillStyle = fill;
-        ctx.fill();
+        graphics.fillRoundRect(x, y, w, h, this.cornerRadius, fill);
 
         if (this.borderWidth > 0) {
-            ctx.lineWidth = this.borderWidth;
-            ctx.strokeStyle = this.borderColor;
-            ctx.stroke();
+            graphics.strokeRoundRect(x, y, w, h, this.cornerRadius, this.borderColor, this.borderWidth);
         }
 
         if (this.label) {
-            ctx.font = `${this.fontSize}px ${this.fontFamily}`;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillStyle = state === "disabled" ? this.disabledTextColor : this.textColor;
-            ctx.fillText(this.label, x + w / 2, y + h / 2, w);
+            graphics.drawText(this.label, x + w / 2, y + h / 2, {
+                font: `${this.fontSize}px ${this.fontFamily}`,
+                color: state === "disabled" ? this.disabledTextColor : this.textColor,
+                align: "center",
+                baseline: "middle",
+                maxWidth: w,
+            });
         }
     }
 }

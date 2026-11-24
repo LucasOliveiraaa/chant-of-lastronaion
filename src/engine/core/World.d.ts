@@ -1,6 +1,8 @@
 import type GameObject from "./GameObject";
 import type Component from "./Component";
 import type PhysicsEngine from "../physics/PhysicsEngine";
+import type LightingEngine from "../lighting/LightingEngine";
+import type RenderingEngine from "../rendering/RenderingEngine";
 
 /** The single scene plus the game loop. GameObjects register themselves on construction. */
 export default class World {
@@ -8,9 +10,14 @@ export default class World {
     static getInstance(): World;
 
     readonly canvas: HTMLCanvasElement;
+    /** Used by the engine's rendering passes; components draw through Renderer and Graphics instead. */
     readonly ctx: CanvasRenderingContext2D;
     readonly gameObjects: readonly GameObject[];
     readonly physics: PhysicsEngine;
+    /** Lights what the Renderers draw; run by the RenderingEngine. */
+    readonly lighting: LightingEngine;
+    /** Draws the frame after lateUpdate(). */
+    readonly rendering: RenderingEngine;
 
     /** Called by the GameObject constructor; starts the object if the world is running. */
     addGameObject<T extends GameObject>(gameObject: T): T;

@@ -23,4 +23,6 @@ export default class Vector2 {
     length(): number;
     normalize(): Vector2;
     distanceTo(other: Vector2): number;
+    /** Returns the vector rotated by degrees (positive is clockwise on screen, since Y points down). */
+    rotate(degrees: number): Vector2;
 }

@@ -1,7 +1,7 @@
 import type Vector2 from "../../engine/math/Vector2.js";
+import type { TileId } from "./Tile.js";
 
 export type RoomId = number;
-export type TileId = number;
 export type DirName = "top" | "right" | "bottom" | "left";
 
 export type Room = {

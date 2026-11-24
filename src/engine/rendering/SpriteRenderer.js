@@ -1,10 +1,15 @@
-import World from "../core/World.js";
-import Component from "../core/Component.js";
+import Renderer from "./Renderer.js";
 import Sprites from "../assets/Sprites.js";
 
-export default class SpriteRenderer extends Component {
+export default class SpriteRenderer extends Renderer {
     currentSprite = null;
     spriteSheet = null;
+
+    flipX = false;
+    flipY = false;
+    // Turn off to keep pixel art sharp when scaled.
+    imageSmoothing = true;
+    opacity = 1;
 
     // Accepts the sprite's id or name; null clears it.
     setSprite(spriteIdOrName) {
@@ -26,25 +31,12 @@ export default class SpriteRenderer extends Component {
         this.spriteSheet = sprites.getSpriteSheet(sprite.spriteSheetId);
     }
 
-    update() {
-        if (!this.currentSprite) return;
-        if (!this.spriteSheet) return;
+    render(graphics) {
+        if (!this.currentSprite || !this.spriteSheet) return;
 
-        const ctx = World.getInstance().ctx;
-
-        const { position, size } = this.currentSprite;
-        const { asset } = this.spriteSheet;
-
-        ctx.drawImage(
-            asset.image,
-            position.x,
-            position.y,
-            size.x,
-            size.y,
-            this.gameObject.transform.position.x,
-            this.gameObject.transform.position.y,
-            this.gameObject.transform.scale.x,
-            this.gameObject.transform.scale.y
-        );
+        const { scale } = this.gameObject.transform;
+        graphics.alpha = this.opacity;
+        graphics.imageSmoothing = this.imageSmoothing;
+        graphics.drawSprite(this.currentSprite, 0, 0, scale.x, scale.y, this.flipX, this.flipY);
     }
 }

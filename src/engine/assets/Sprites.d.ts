@@ -81,6 +81,24 @@ export default class Sprites {
         scissorSize?: Vector2 | null
     ): SpriteId[];
 
+    /**
+     * Creates a sprite filled with a single color, without an image file, and returns its id.
+     *
+     * The color is drawn on a generated sheet named `"solid:<color>:<width>x<height>"`, shared by
+     * every solid sprite with the same color and size. Without a name the sprite takes the
+     * sheet's name, so repeated calls return the same id.
+     *
+     * @example
+     * const red = Sprites.getInstance().createSolidSprite(50, 50, "#FF0000");
+     * spriteRenderer.setSprite(red);
+     *
+     * @param width Width in pixels; must be positive.
+     * @param height Height in pixels; must be positive.
+     * @param color Any CSS color, e.g. `"#FF0000"`.
+     * @param name Optional name to look the sprite up with.
+     */
+    createSolidSprite(width: number, height: number, color: string, name?: string | null): SpriteId;
+
     getSpriteSheet(idOrName: SpriteSheetId | string): SpriteSheet | null;
     getSprite(idOrName: SpriteId | string): Sprite | null;
 

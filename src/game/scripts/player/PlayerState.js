@@ -1,5 +1,5 @@
-import Component from "../../engine/core/Component.js";
-import Time from "../../engine/core/Time.js";
+import Component from "../../../engine/core/Component.js";
+import Time from "../../../engine/core/Time.js";
 
 export default class PlayerState extends Component {
     health = 3;
@@ -24,7 +24,9 @@ export default class PlayerState extends Component {
         }
     }
 
-    onCollisionEnter(other) {
+    // Pickups are triggers.
+    onTriggerEnter(collider) {
+        const other = collider.gameObject;
         if(other.name == "interactable-moeda-1") {
             this.addCoins(1);
             other.destroy();
@@ -38,7 +40,7 @@ export default class PlayerState extends Component {
             other.destroy();
         }
         if (other.name == "interactable-half-heart") {
-            this.heal(0.5);
+            this.heal(0.5);2
             other.destroy();
         }
         if (other.name == "interactable-heart") {

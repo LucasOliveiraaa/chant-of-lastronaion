@@ -2,6 +2,9 @@ import Component from "../core/Component.js";
 import RectTransform from "./RectTransform.js";
 
 export default class UIElement extends Component {
+    // Like Unity's [RequireComponent(typeof(RectTransform))], added by addComponent.
+    static requiredComponents = [RectTransform];
+
     // Receives pointer events and blocks the elements behind it
     raycastTarget = false;
 
@@ -21,6 +24,7 @@ export default class UIElement extends Component {
         return this.gameObject.transform.rect;
     }
 
-    // Called by the canvas in tree order, after layout. UI never draws in update().
-    render(ctx) {}
+    // Called by the canvas in tree order, after layout, in screen space. The state
+    // (alpha, clips) is restored after each element.
+    render(graphics) {}
 }

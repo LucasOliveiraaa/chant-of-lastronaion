@@ -1,4 +1,5 @@
 import UIElement from "./UIElement.js";
+import type Graphics from "../rendering/Graphics.js";
 
 export type UILabelAlign = "left" | "center" | "right";
 export type UILabelVerticalAlign = "top" | "middle" | "bottom";
@@ -33,8 +34,8 @@ export default class UILabel extends UIElement {
     /** The CSS font string built from fontStyle, fontSize and fontFamily. */
     readonly font: string;
 
-    /** The lines as they will be drawn (measured with ctx when wordWrap is on). */
-    getLines(ctx: CanvasRenderingContext2D): string[];
+    /** The lines as they will be drawn (measured with graphics when wordWrap is on). */
+    getLines(graphics: Graphics): string[];
 
-    render(ctx: CanvasRenderingContext2D): void;
+    render(graphics: Graphics): void;
 }

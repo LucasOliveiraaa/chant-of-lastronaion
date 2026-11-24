@@ -3,7 +3,8 @@ import type AudioClip from "../audio/AudioClip";
 export class ImageAsset {
     readonly key: string;
     readonly src: string;
-    readonly image: HTMLImageElement;
+    /** A loaded image, or a canvas for generated sheets (see Sprites.createSolidSprite). */
+    readonly image: HTMLImageElement | HTMLCanvasElement | OffscreenCanvas;
     readonly width: number;
     readonly height: number;
 }

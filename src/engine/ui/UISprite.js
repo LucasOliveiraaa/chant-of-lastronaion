@@ -38,10 +38,10 @@ export default class UISprite extends UIElement {
         this.spriteSheet = sprites.getSpriteSheet(sprite.spriteSheetId);
     }
 
-    render(ctx) {
+    render(graphics) {
         if (!this.currentSprite || !this.spriteSheet) return;
 
-        const { position, size } = this.currentSprite;
+        const { size } = this.currentSprite;
         let { x, y, w, h } = this.rect;
         if (w <= 0 || h <= 0 || size.x <= 0 || size.y <= 0) return;
 
@@ -55,12 +55,8 @@ export default class UISprite extends UIElement {
             h = fitH;
         }
 
-        ctx.globalAlpha *= this.opacity;
-        ctx.imageSmoothingEnabled = this.imageSmoothing;
-        ctx.drawImage(
-            this.spriteSheet.asset.image,
-            position.x, position.y, size.x, size.y,
-            x, y, w, h
-        );
+        graphics.alpha *= this.opacity;
+        graphics.imageSmoothing = this.imageSmoothing;
+        graphics.drawSprite(this.currentSprite, x, y, w, h);
     }
 }

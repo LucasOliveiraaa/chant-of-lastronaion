@@ -37,7 +37,8 @@ export default class Enemy extends Component {
         this.rb.velocity = direction;
     }
 
-    onCollisionStay(other) {
+    onCollisionStay(collision) {
+        const other = collision.gameObject;
         if (other.tag == "player") {
             other.getComponent(PlayerState).takeDamage(0.5);
         }

@@ -20,16 +20,28 @@ export default class Component {
     setup(gameObject) {
         this.gameObject = gameObject;
 
-        this.on("OnCollisionEnter", (other) => {
-            this.onCollisionEnter?.(other);
+        this.on("OnCollisionEnter", (collision) => {
+            this.onCollisionEnter?.(collision);
         });
 
-        this.on("OnCollisionStay", (other) => {
-            this.onCollisionStay?.(other);
+        this.on("OnCollisionStay", (collision) => {
+            this.onCollisionStay?.(collision);
         });
 
-        this.on("OnCollisionExit", (other) => {
-            this.onCollisionExit?.(other);
+        this.on("OnCollisionExit", (collision) => {
+            this.onCollisionExit?.(collision);
+        });
+
+        this.on("OnTriggerEnter", (other) => {
+            this.onTriggerEnter?.(other);
+        });
+
+        this.on("OnTriggerStay", (other) => {
+            this.onTriggerStay?.(other);
+        });
+
+        this.on("OnTriggerExit", (other) => {
+            this.onTriggerExit?.(other);
         });
     }
 
@@ -96,10 +108,12 @@ export default class Component {
 
         this.__state = "destroyed";
 
-        try {
-            this.onDestroy();
-        } catch (error) {
-            console.error("Error in component onDestroy():", error);
+        if (!this.gameObject?.isPrefab) {
+            try {
+                this.onDestroy();
+            } catch (error) {
+                console.error("Error in component onDestroy():", error);
+            }
         }
 
         this.observers.clear();

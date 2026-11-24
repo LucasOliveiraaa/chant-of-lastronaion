@@ -6,16 +6,20 @@ import UIElement from "./UIElement.js";
 /**
  * Root of a UI hierarchy. Adds a RectTransform to its GameObject if it doesn't have one.
  *
- * Every frame (lateUpdate) it:
+ * Every frame, in lateUpdate it:
  *   1. sizes its own rect to the game canvas and lays out the children inside it,
- *   2. renders every UIElement in tree order (parents first, later siblings on top),
- *   3. keeps its element list ready for pointer hit-testing (topmost first).
+ *   2. keeps its element list ready for pointer hit-testing (topmost first),
+ * and then the RenderingEngine calls render(), which draws every UIElement in tree order
+ * (parents first, later siblings on top).
  *
  * Pointer events are translated to events on the elements via notify():
  *   "pointerenter", "pointerexit", "pointerdown", "pointerup", "click"
  * each called with a pointer object: { x, y, button }.
  */
 export default class UICanvas extends Component {
+    // Like Unity's [RequireComponent(typeof(RectTransform))], added by addComponent.
+    static requiredComponents = [RectTransform];
+
     constructor() {
         super();
 
@@ -57,9 +61,7 @@ export default class UICanvas extends Component {
     }
 
     lateUpdate() {
-        const world = World.getInstance();
-        const canvas = world.canvas;
-        const ctx = world.ctx;
+        const canvas = World.getInstance().canvas;
 
         // Like a Screen Space - Overlay canvas, the root always covers the whole screen;
         // its own anchors and sizeDelta are ignored.
@@ -79,11 +81,14 @@ export default class UICanvas extends Component {
 
         // Layout may have moved things under a stationary pointer.
         this._updateHover();
+    }
 
+    // Called by the RenderingEngine after the world, the lighting and the gizmos.
+    render(graphics) {
         for (const element of this.elements) {
-            ctx.save();
-            element.render(ctx);
-            ctx.restore();
+            graphics.save();
+            element.render(graphics);
+            graphics.restore();
         }
     }
 

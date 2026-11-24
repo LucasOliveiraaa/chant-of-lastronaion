@@ -1,17 +1,10 @@
-import Component from "../core/Component.js";
-import World from "../core/World.js";
+import Renderer from "./Renderer.js";
 
-export default class SolidRenderer extends Component {
+export default class SolidRenderer extends Renderer {
     color = "#000000";
 
-    update() {
-        const ctx = World.getInstance().ctx;
-        ctx.fillStyle = this.color;
-        ctx.fillRect(
-            this.gameObject.transform.position.x, 
-            this.gameObject.transform.position.y, 
-            this.gameObject.transform.scale.x, 
-            this.gameObject.transform.scale.y
-        );
+    render(graphics) {
+        const { scale } = this.gameObject.transform;
+        graphics.fillRect(0, 0, scale.x, scale.y, this.color);
     }
 }

@@ -4,13 +4,13 @@ import CircleCollider from "../../engine/physics/CircleCollider.js";
 import Rigidbody from "../../engine/physics/Rigidbody.js";
 import SolidRenderer from "../../engine/rendering/SolidRenderer.js";
 import EnemyState from "./EnemyState.js";
-import PlayerState from "./PlayerState.js";
+import PlayerState from "../scripts/player/PlayerState.js";
 
 export default class Projectile extends Component {
     whoseSide = null;
     damage = 0.5;
 
-    speed = 500 * 100;
+    speed = 50;
     direction = null;
     
     start() {
@@ -23,18 +23,17 @@ export default class Projectile extends Component {
         }
     }
 
-    onCollisionEnter(other) {
+    onCollisionEnter(collision) {
         if (this.whoseSide == null) return;
 
+        const other = collision.gameObject;
         if (other.tag == "player" && this.whoseSide == "enemy") {
             other.getComponent(PlayerState).takeDamage(this.damage);
-            this.gameObject.destroy();
         } else if (other.tag.startsWith("enemy") && this.whoseSide == "player") {
             other.getComponent(EnemyState).takeDamage(this.damage);
-            this.gameObject.destroy();
-        }else if (!other.tag.startsWith("interactable")) {
-            this.gameObject.destroy();
         }
+        // Triggers (pickups, traps) send onTriggerEnter, so anything solid stops the projectile.
+        this.gameObject.destroy();
     }
 }
 

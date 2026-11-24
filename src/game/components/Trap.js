@@ -1,6 +1,6 @@
 import Component from "../../engine/core/Component.js";
 import SolidRenderer from "../../engine/rendering/SolidRenderer.js";
-import PlayerState from "./PlayerState.js";
+import PlayerState from "../scripts/player/PlayerState.js";
 import GameObject from "../../engine/core/GameObject.js";
 
 export default class Trap extends Component{
@@ -14,7 +14,8 @@ export default class Trap extends Component{
         this.player = GameObject.findWithTag("player");
     }
 
-    onCollisionStay(other) {
+    onTriggerStay(collider) {
+        const other = collider.gameObject;
         if (other.tag == "player") {
             other.getComponent(PlayerState).takeDamage(0.5);
         }
