@@ -27,7 +27,7 @@ export default class CameraController extends Component {
     }
 
     #refresh() {
-        this.camera.zoom = fitZoom();
+        this.camera.zoom = fitZoom() - 0.1;
 
         const chamber = DungeonManager.instance?.currentChamber ?? null;
         this.follow.bounds = chamber?.bounds ?? null;

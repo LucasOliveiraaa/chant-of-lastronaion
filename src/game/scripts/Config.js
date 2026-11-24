@@ -5,4 +5,4 @@ export const TILE_WIDTH = 32;
 export const ROOM_WIDTH = 17;
 export const ROOM_HEIGHT = 11;
 // Width of a door opening, in tiles.
-export const DOOR_WIDTH = 3;
+export const DOOR_WIDTH = 1;

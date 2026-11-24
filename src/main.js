@@ -10,6 +10,7 @@ import { Camera } from "./game/scripts/camera/Camera.js";
 import { Dungeon } from "./game/scripts/dungeon/Dungeon.js";
 import UICanvas from "./engine/ui/UICanvas.js";
 import { Hearts } from "./game/scripts/gui/Hearts.js";
+import { Minimap } from "./game/scripts/gui/Minimap.js";
 
 const canvas = document.getElementById("game");
 
@@ -18,6 +19,7 @@ async function main() {
     ui.tag = "ui";
 
     GameObject.instantiate(Hearts);
+    GameObject.instantiate(Minimap);
     GameObject.instantiate(Camera);
     GameObject.instantiate(Player);
     // Builds the start chamber (the cell at world (0, 0)) and puts the player in it.

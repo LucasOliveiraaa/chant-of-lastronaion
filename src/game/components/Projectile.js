@@ -10,7 +10,7 @@ export default class Projectile extends Component {
     whoseSide = null;
     damage = 0.5;
 
-    speed = 50;
+    speed = 15000;
     direction = null;
     
     start() {

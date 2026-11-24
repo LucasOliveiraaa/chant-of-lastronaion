@@ -1,5 +1,5 @@
 import Sprites from "../../../engine/assets/Sprites.js";
-import Animations from "../../../engine/animation/Animations.js";
+import Animations, { frames } from "../../../engine/animation/Animations.js";
 import Component from "../../../engine/core/Component.js";
 import Animator from "../../../engine/animation/Animator.js";
 import Input from "../../../engine/input/Input.js";
@@ -17,31 +17,27 @@ export default class PlayerMovement extends Component {
 
         const animations = Animations.getInstance();
 
+        const getIds = (start, count) => sps.slice(start, start + count);
+
         animations.defineAnimation("idle", {
-            frames: [sps[312], sps[313]],
-            loop: true,
-            interruptible: true,
+            frames: frames(getIds(312, 2), 0.5),
+            loop: true
         });
-        
         animations.defineAnimation("walkNorth", {
-            frames: sps.slice(494, 494 + 8),
-            loop: true,
-            interruptible: true,
-        });
-        animations.defineAnimation("walkEast", {
-            frames: sps.slice(507, 507 + 8),
-            loop: true,
-            interruptible: true,
-        });
-        animations.defineAnimation("walkSouth", {
-            frames: sps.slice(520, 520 + 8),
-            loop: true,
-            interruptible: true,
+            frames: frames(getIds(494, 8), 0.5),
+            loop: true
         });
         animations.defineAnimation("walkWest", {
-            frames: sps.slice(533, 533 + 8),
-            loop: true,
-            interruptible: true,
+            frames: frames(getIds(507, 8), 0.5),
+            loop: true
+        });
+        animations.defineAnimation("walkSouth", {
+            frames: frames(getIds(520, 8), 0.5),
+            loop: true
+        });
+        animations.defineAnimation("walkEast", {
+            frames: frames(getIds(533, 8), 0.5),
+            loop: true
         });
 
         console.log(sps.length, sps[312], sps[313], sps[494], sps[520]);
@@ -77,7 +73,7 @@ export default class PlayerMovement extends Component {
     
         if (horizontal > 0) return "walkEast";
         if (horizontal < 0) return "walkWest";
-        if (vertical > 0) return "walkNorth";
-        if (vertical < 0) return "walkSouth";
+        if (vertical < 0) return "walkNorth";
+        if (vertical > 0) return "walkSouth";
     }
 }

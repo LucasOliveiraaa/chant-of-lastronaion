@@ -72,9 +72,9 @@ export class HeartsManager extends Component {
             heart.destroy();
         }
 
-        const GAP = 1;
-        const START_X = 10;
-        const START_Y = 10;
+        const GAP = 0;
+        const START_X = 50;
+        const START_Y = 25;
 
         const heartWidth = 50;
         const heartHeight = 50;

@@ -4,6 +4,9 @@ import Time from "../../../engine/core/Time.js";
 export default class PlayerState extends Component {
     health = 3;
     maxHealth = 3;
+    currentChamber = null;
+    visitedChambers = new Set();
+    discoveredChambers = new Set();
 
     damageCooldown = 1;
     damageCooldownCounter = 0;
@@ -13,6 +16,20 @@ export default class PlayerState extends Component {
     maxCoins = 100;
 
     weapon = null;
+
+    resetExploration() {
+        this.visitedChambers.clear();
+        this.discoveredChambers.clear();
+        this.currentChamber = null;
+    }
+
+    enterChamber(chamber) {
+        this.currentChamber = chamber;
+        if (!chamber) return;
+
+        this.visitedChambers.add(chamber.instance);
+        this.discoveredChambers.delete(chamber.instance);
+    }
 
     update() {
         if (this.onCooldown) {

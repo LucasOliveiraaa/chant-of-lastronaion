@@ -6,6 +6,7 @@ import ChamberManager from "./ChamberManager.js";
 import { ROOMS, START_ROOM, DIRECTIONS, DUNGEON_CONFIG } from "./Rooms.js";
 import { generateDungeonWithStats } from "../../lib/Dung.js";
 import { TILE_WIDTH } from "../Config.js";
+import PlayerState from "../player/PlayerState.js";
 
 // Pixels between the player and the door trigger it arrives next to, so it doesn't walk
 // straight back through.
@@ -44,6 +45,8 @@ export default class DungeonManager extends Component {
         }
 
         this.player = GameObject.findWithTag("player");
+        this.playerState = this.player?.getComponent(PlayerState) ?? null;
+        this.playerState?.resetExploration();
 
         // Dung places the start room at (0, 0) as instance 0.
         const start = this.getCell(0, 0);
@@ -78,6 +81,29 @@ export default class DungeonManager extends Component {
         return this.result.rooms.filter(cell => cell.instance === instance);
     }
 
+    #revealConnectedChambers(chamber) {
+        if (!this.playerState) return;
+
+        for (const cell of chamber.cells) {
+            const room = this.rooms.get(cell.room);
+            if (!room) continue;
+
+            for (const [direction, dir] of Object.entries(DIRECTIONS)) {
+                if (!room.doors[direction]) continue;
+
+                const neighbor = this.getCell(
+                    cell.position.x + dir.dx,
+                    cell.position.y + dir.dy
+                );
+                if (!neighbor || neighbor.instance === chamber.instance) continue;
+
+                if (!this.playerState.visitedChambers.has(neighbor.instance)) {
+                    this.playerState.discoveredChambers.add(neighbor.instance);
+                }
+            }
+        }
+    }
+
     #enterChamber(instance, entry) {
         this.currentChamber?.gameObject.destroy();
 
@@ -87,6 +113,9 @@ export default class DungeonManager extends Component {
         chamber.cells = this.getChamberCells(instance);
         chamber.build();
         this.currentChamber = chamber;
+        this.playerState ??= this.player?.getComponent(PlayerState) ?? null;
+        this.playerState?.enterChamber(chamber);
+        this.#revealConnectedChambers(chamber);
 
         if (!this.player) return;
 

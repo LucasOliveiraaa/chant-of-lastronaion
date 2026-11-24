@@ -70,6 +70,10 @@ export default class Graphics {
         this.#ctx.fillRect(x, y, width, height);
     }
 
+    clearRect(x, y, width, height) {
+        this.#ctx.clearRect(x, y, width, height);
+    }
+
     strokeRect(x, y, width, height, color, lineWidth = 1) {
         this.#stroke(color, lineWidth);
         this.#ctx.strokeRect(x, y, width, height);
