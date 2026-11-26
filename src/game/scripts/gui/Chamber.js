@@ -25,8 +25,6 @@ export function chamberColor(state) {
     return CHAMBER_DISCOVERED_COLOR;
 }
 
-// Shared chamber shape drawing: the union of room cells is filled seamlessly, with only
-// convex outer grid corners rounded and inset shadows on exposed bottom/right edges.
 export function drawChamber(graphics, cells, originX, originY, roomPx, state) {
     if (!cells?.length) return;
 
@@ -64,7 +62,6 @@ export function drawChamber(graphics, cells, originX, originY, roomPx, state) {
         }
     }
 
-    // 1px pixel corners only on convex outer corners; shared/internal angles stay square.
     for (let y = minY; y <= maxY; y++) {
         for (let x = minX; x <= maxX; x++) {
             if (!occupied(x, y)) continue;
@@ -80,6 +77,63 @@ export function drawChamber(graphics, cells, originX, originY, roomPx, state) {
             if (!occupied(x - 1, y) && !occupied(x, y + 1)) graphics.clearRect(baseX, baseY + roomPx - 1, 1, 1);
             if (!occupied(x + 1, y) && !occupied(x, y + 1)) graphics.clearRect(baseX + roomPx - 1, baseY + roomPx - 1, 1, 1);
         }
+    }
+}
+
+const PIXEL_PALETTE = {
+    discovered: { fill: CHAMBER_DISCOVERED_COLOR, edge: "#1a1914", shade: "#2f2e28" },
+    visited: { fill: CHAMBER_VISITED_COLOR, edge: "#1a1914", shade: "#5e5e5e" },
+    current: { fill: CHAMBER_CURRENT_COLOR, edge: "#ffffff", shade: "#a9a9a9" },
+};
+
+export function drawPixelChamber(graphics, cells, originX, originY, roomPx, state, pixel) {
+    if (!cells?.length) return;
+
+    const { fill, edge, shade } = PIXEL_PALETTE[state] ?? PIXEL_PALETTE.discovered;
+    const P = pixel;
+    const set = new Set();
+    for (const cell of cells) set.add(`${cell.position.x},${cell.position.y}`);
+    const occupied = (x, y) => set.has(`${x},${y}`);
+
+    for (const cell of cells) {
+        const cx = cell.position.x;
+        const cy = cell.position.y;
+        const hasT = occupied(cx, cy - 1);
+        const hasB = occupied(cx, cy + 1);
+        const hasL = occupied(cx - 1, cy);
+        const hasR = occupied(cx + 1, cy);
+
+        const left = originX + cx * roomPx;
+        const top = originY + cy * roomPx;
+        const right = left + roomPx;
+        const bottom = top + roomPx;
+        const w = roomPx;
+        const h = roomPx;
+
+        // Outline, with convex corners notched.
+        const nw = !hasL && !hasT ? P : 0;
+        const ne = !hasR && !hasT ? P : 0;
+        const sw = !hasL && !hasB ? P : 0;
+        const se = !hasR && !hasB ? P : 0;
+        if (!hasT) graphics.fillRect(left + nw, top, w - nw - ne, P, edge);
+        if (!hasB) graphics.fillRect(left + sw, bottom - P, w - sw - se, P, edge);
+        if (!hasL) graphics.fillRect(left, top + (hasT ? 0 : P), P, h - (hasT ? 0 : P) - (hasB ? 0 : P), edge);
+        if (!hasR) graphics.fillRect(right - P, top + (hasT ? 0 : P), P, h - (hasT ? 0 : P) - (hasB ? 0 : P), edge);
+
+        const il = left + (hasL ? 0 : P);
+        const it = top + (hasT ? 0 : P);
+        const ir = right - (hasR ? 0 : P);
+        const ib = bottom - (hasB ? 0 : P);
+        graphics.fillRect(il, it, ir - il, ib - it, fill);
+
+        if (!hasB) graphics.fillRect(il, ib - P, ir - il, P, shade);
+        if (!hasR) graphics.fillRect(ir - P, it, P, ib - it, shade);
+
+        // Fill concave corners so the outline stays unbroken.
+        if (hasL && hasT && !occupied(cx - 1, cy - 1)) graphics.fillRect(left, top, P, P, edge);
+        if (hasR && hasT && !occupied(cx + 1, cy - 1)) graphics.fillRect(right - P, top, P, P, edge);
+        if (hasL && hasB && !occupied(cx - 1, cy + 1)) graphics.fillRect(left, bottom - P, P, P, edge);
+        if (hasR && hasB && !occupied(cx + 1, cy + 1)) graphics.fillRect(right - P, bottom - P, P, P, edge);
     }
 }
 
@@ -118,7 +172,7 @@ export class ChamberRenderer extends Renderer {
 
 export class ChamberPrefab extends Prefab {
     constructor() {
-        super("Chamber");   
+        super("Chamber");
     }
 }
 
