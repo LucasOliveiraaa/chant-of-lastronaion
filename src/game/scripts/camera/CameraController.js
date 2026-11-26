@@ -6,19 +6,20 @@ import CameraFollow from "../../../engine/rendering/CameraFollow.js";
 import DungeonManager from "../dungeon/DungeonManager.js";
 import { TILE_WIDTH, ROOM_WIDTH, ROOM_HEIGHT } from "../Config.js";
 
-// Follows the player inside the current chamber. CameraFollow does the following and keeps
-// the view inside the chamber's bounds; this keeps those bounds current and zooms so the view
-// is never bigger than one room, the smallest a chamber can be, so the void around a chamber
-// never shows. Runs in update, before CameraFollow's lateUpdate.
+// Extra zoom-out for chambers at least 2x2 rooms.
+const LARGE_CHAMBER_ZOOM_OUT = 1.35;
+
 export default class CameraController extends Component {
     static requiredComponents = [Camera, CameraFollow];
 
     #chamber = null;
+    #zoomOut = 1;
 
     start() {
         this.camera = this.gameObject.getComponent(Camera);
         this.follow = this.gameObject.getComponent(CameraFollow);
         this.follow.target = GameObject.findWithTag("player")?.transform ?? null;
+        this.follow.damping = 0;
         this.#refresh();
     }
 
@@ -27,20 +28,45 @@ export default class CameraController extends Component {
     }
 
     #refresh() {
-        this.camera.zoom = fitZoom() - 0.1;
-
         const chamber = DungeonManager.instance?.currentChamber ?? null;
         this.follow.bounds = chamber?.bounds ?? null;
 
-        // A new chamber means the player was moved: jump instead of panning across.
         if (chamber !== this.#chamber) {
             this.#chamber = chamber;
+            this.#zoomOut = zoomOutFor(chamber);
+            this.camera.zoom = baseZoom() / this.#zoomOut;
             this.follow.snap();
+            return;
         }
+
+        this.camera.zoom = baseZoom() / this.#zoomOut;
     }
 }
 
-// Smallest zoom at which the view fits inside one room.
+function zoomOutFor(chamber) {
+    const dungeon = DungeonManager.instance;
+    if (!chamber || !dungeon) return 1;
+
+    const cells = dungeon.getChamberCells(chamber.instance);
+    if (!cells?.length) return 1;
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const cell of cells) {
+        minX = Math.min(minX, cell.position.x);
+        minY = Math.min(minY, cell.position.y);
+        maxX = Math.max(maxX, cell.position.x);
+        maxY = Math.max(maxY, cell.position.y);
+    }
+
+    const spanX = maxX - minX + 1;
+    const spanY = maxY - minY + 1;
+    return spanX >= 2 && spanY >= 2 ? LARGE_CHAMBER_ZOOM_OUT : 1;
+}
+
+function baseZoom() {
+    return fitZoom() - 0.1;
+}
+
 function fitZoom() {
     const { canvas } = World.getInstance();
     if (!canvas) return 1;
