@@ -1,6 +1,6 @@
 import Component from "../../engine/core/Component.js";
 import GameObject from "../../engine/core/GameObject.js";
-import CircleCollider from "../../engine/physics/CircleCollider.js";
+import Collider from "../../engine/physics/Collider.js";
 import Rigidbody from "../../engine/physics/Rigidbody.js";
 import SolidRenderer from "../../engine/rendering/SolidRenderer.js";
 import EnemyState from "./EnemyState.js";
@@ -32,21 +32,22 @@ export default class Projectile extends Component {
         } else if (other.tag.startsWith("enemy") && this.whoseSide == "player") {
             other.getComponent(EnemyState).takeDamage(this.damage);
         }
-        // Triggers (pickups, traps) send onTriggerEnter, so anything solid stops the projectile.
         this.gameObject.destroy();
     }
 }
 
 export function createProjectile(position, whoseSide, damage, direction) {
-    const projectile = new GameObject("projectile", SolidRenderer, Rigidbody, CircleCollider, Projectile);
+    const projectile = new GameObject("projectile", SolidRenderer, Rigidbody, Collider, Projectile);
     projectile.tag = "projectile";
     projectile.transform.position.set(position.x, position.y);
     projectile.transform.scale.set(10, 10);
 
     projectile.getComponent(SolidRenderer).color = "#FFFF00";
 
-    projectile.getComponent(CircleCollider).debug = true;
-    projectile.getComponent(CircleCollider).radius = 5;
+    const collider = projectile.getComponent(Collider);
+    collider.type = Collider.CIRCLE;
+    collider.radius = 5;
+    collider.debug = true;
 
     projectile.getComponent(Projectile).whoseSide = whoseSide;
     projectile.getComponent(Projectile).damage = damage;

@@ -1,6 +1,6 @@
 import Component from "../../../engine/core/Component.js";
 import SpriteRenderer from "../../../engine/rendering/SpriteRenderer.js";
-import SquareCollider from "../../../engine/physics/SquareCollider.js";
+import Collider from "../../../engine/physics/Collider.js";
 import { Tile } from "../../lib/Tile.js";
 import { TILE_WIDTH } from "../Config.js";
 
@@ -16,7 +16,7 @@ export default class TileRenderer extends Component {
         }
 
         this.sr = this.gameObject.getComponent(SpriteRenderer);
-        this.sc = this.gameObject.getComponent(SquareCollider);
+        this.sc = this.gameObject.getComponent(Collider);
     }
 
     update() {
@@ -25,7 +25,7 @@ export default class TileRenderer extends Component {
 
             this.sr.setSprite(this._tile.sprite);
 
-            this.sc.trigger = !this._tile.obstacle;
+            this.sc.isTrigger = !this._tile.obstacle;
         }
     }
 

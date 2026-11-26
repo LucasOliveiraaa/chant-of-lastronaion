@@ -1,6 +1,5 @@
 import Rigidbody from "./Rigidbody.js";
 import Collider from "./Collider.js";
-import CircleCollider from "./CircleCollider.js";
 import Vector2 from "../math/Vector2.js";
 import Time from "../core/Time.js";
 import World from "../core/World.js";
@@ -16,8 +15,7 @@ const STILL = Object.freeze({ x: 0, y: 0 });
 const DEG_TO_RAD = Math.PI / 180;
 const RAD_TO_DEG = 180 / Math.PI;
 
-// Box2D's tolerances: an axis of B is only picked when clearly better than A's, so the
-// reference face doesn't flicker between the two boxes when they overlap equally.
+// Box2D's tolerances: keeps the reference face from flickering between equally overlapping boxes.
 const RELATIVE_TOLERANCE = 0.98;
 const ABSOLUTE_TOLERANCE = 0.001;
 const CONTACT_TOLERANCE = 0.001;
@@ -25,10 +23,8 @@ const CONTACT_TOLERANCE = 0.001;
 // Pair keys are idA * stride + idB, so object ids must stay below 2^21.
 const ID_STRIDE = 2097152;
 
-// Scratch result of the narrow phase (normal points from A to B) with up to two contact
-// points, reused to avoid allocations.
+// Narrow phase scratch result; normal points from A to B.
 const HIT = { nx: 0, ny: 0, depth: 0, count: 0, x1: 0, y1: 0, x2: 0, y2: 0 };
-// Scratch solver data per contact point, and a relative velocity.
 const POINTS = [0, 1].map(() => ({ x: 0, y: 0, rax: 0, ray: 0, rbx: 0, rby: 0, jn: 0, jt: 0, tx: 0, ty: 0 }));
 const RV = { x: 0, y: 0 };
 
@@ -68,10 +64,7 @@ export default class PhysicsEngine {
         this._dispatchEvents(frameContacts, bodies);
     }
 
-    // The only place that reads collider components. Shapes are cached as plain numbers:
-    // center of mass (mx, my) = the transform's world center, collider center (cx, cy),
-    // rotation (angle, cos, sin), local collider offset (ox, oy) and half extents (ex, ey),
-    // where a circle has ex = ey = radius.
+    // m = center of mass, c = collider center, o = collider offset, e = half extents (radius for circles).
     _collectBodies() {
         const world = World.getInstance();
         const byObject = new Map();
@@ -112,7 +105,7 @@ export default class PhysicsEngine {
             body.cos = Math.cos(body.angle);
             body.sin = Math.sin(body.angle);
 
-            // Moves are in world space; a rotated parent needs them turned into its local space.
+            // Moves are in world space; convert them into a rotated parent's local space.
             const parentAngle = transform.parent ? transform.parent.worldRotation * DEG_TO_RAD : 0;
             body.pcos = Math.cos(parentAngle);
             body.psin = Math.sin(parentAngle);
@@ -123,7 +116,7 @@ export default class PhysicsEngine {
 
             if (collider) {
                 body.trigger = !!collider.isTrigger;
-                body.isCircle = collider instanceof CircleCollider;
+                body.isCircle = collider.isCircle;
                 body.ox = collider.offset.x;
                 body.oy = collider.offset.y;
 
@@ -203,8 +196,6 @@ export default class PhysicsEngine {
         body.cy += dy;
     }
 
-    // The transform turns around its center, which is the center of mass, so only the
-    // collider center (when offset) moves.
     _rotate(body, radians) {
         if (radians === 0) return;
 
@@ -220,8 +211,7 @@ export default class PhysicsEngine {
         body.cy = body.my + body.ox * body.sin + body.oy * body.cos;
     }
 
-    // Broad phase is a sweep and prune on the X axis: sorted by minX, each body only
-    // looks at the ones that start before it ends. Then Y overlap, then the exact test.
+    // Sweep and prune on X, then Y overlap, then the narrow phase.
     _detectAndCorrect(active, frameContacts) {
         for (const b of active) {
             let hx = b.ex;
@@ -265,10 +255,8 @@ export default class PhysicsEngine {
         }
     }
 
-    // Reads the contact left in HIT by narrowPhase. The impulses of both contact points are
-    // computed from the same velocities and then applied together, so a box resting flat on
-    // another gets equal impulses at both corners and doesn't start to spin.
-    // The impulses are summed into the contact record for the Collision messages.
+    // Both contact points' impulses are computed before applying either, so a box resting
+    // flat gets equal impulses at both corners and doesn't start to spin.
     _resolve(contact) {
         const { a, b } = contact;
         const { nx, ny, depth, count } = HIT;
@@ -307,8 +295,6 @@ export default class PhysicsEngine {
         }
     }
 
-    // Normal impulse at one contact point, shared between the points. The arms from each
-    // center of mass make an off-center hit change the angular velocities too.
     _normalImpulse(a, b, nx, ny, point, count) {
         point.jn = 0;
 
@@ -323,7 +309,6 @@ export default class PhysicsEngine {
         point.jn = (-(1 + restitution) * vn) / k / count;
     }
 
-    // Friction against the sliding left after the normal impulses, capped by mu * jn.
     _frictionImpulse(a, b, nx, ny, point, count, mu) {
         point.jt = 0;
         if (point.jn <= 0) return;
@@ -346,7 +331,6 @@ export default class PhysicsEngine {
         point.jt = Math.max(-maxJt, Math.min(maxJt, -tLen / kt / count));
     }
 
-    // Applies impulse j along (dx, dy) at the point: -j to A, +j to B.
     _apply(a, b, dx, dy, point, j) {
         if (j === 0) return;
 
@@ -382,15 +366,11 @@ export default class PhysicsEngine {
         const events = [];
         let alive = null;
 
-        // Like Unity, a pair with a trigger sends OnTriggerX with the other Collider, and a
-        // solid pair sends OnCollisionX with a Collision. Each side gets its own argument,
-        // built before any message runs. A pair whose kind changed (a collider's isTrigger
-        // was toggled) ends as the old kind and begins as the new one.
+        // A pair whose isTrigger was toggled exits as the old kind and enters as the new one.
         for (const [key, contact] of previous) {
             const now = current.get(key);
             if (now && now.enabled === contact.enabled) continue;
             alive ??= new Set(bodies.map((body) => body.gameObject));
-            // A removed object gets no message, but the survivor still learns the contact ended.
             const { a, b } = contact;
             if (alive.has(a.gameObject)) events.push(exitEvent(contact, true));
             if (alive.has(b.gameObject)) events.push(exitEvent(contact, false));
@@ -403,16 +383,13 @@ export default class PhysicsEngine {
 
         this._contacts = current;
 
-        // Messages run on a snapshot so they can add/remove objects safely.
+        // Snapshot so handlers can add/remove objects safely.
         for (const [name, target, argument] of events) {
             target.sendMessage(name, argument);
         }
     }
 }
 
-// Copies the contact left in HIT by narrowPhase, plus the velocities before the solver, into
-// a record that is reused when the pair touches again in a later substep. The impulses are
-// zeroed here and summed by _resolve.
 function recordContact(contact, a, b) {
     contact ??= {
         a: null, b: null, enabled: false, nx: 0, ny: 0, count: 0, rvx: 0, rvy: 0,
@@ -451,7 +428,6 @@ function recordContact(contact, a, b) {
     return contact;
 }
 
-// [message, receiver, argument] for a pair touching this step, as seen by A (forA) or B.
 function touchEvent(contact, forA, stay) {
     const self = forA ? contact.a : contact.b;
     const other = forA ? contact.b : contact.a;
@@ -461,7 +437,6 @@ function touchEvent(contact, forA, stay) {
     return [stay ? "OnCollisionStay" : "OnCollisionEnter", self.gameObject, buildCollision(contact, forA, true)];
 }
 
-// Like Unity, the exit Collision has no contact points.
 function exitEvent(contact, forA) {
     const self = forA ? contact.a : contact.b;
     const other = forA ? contact.b : contact.a;
@@ -469,9 +444,8 @@ function exitEvent(contact, forA) {
     return ["OnCollisionExit", self.gameObject, buildCollision(contact, forA, false)];
 }
 
-// The Collision as seen by A (forA) or B. The record's normal points from A to B and its
-// velocities are B relative to A; Unity's point from the other object to this one and are
-// the other relative to this one, so A gets the normal flipped and B the velocities flipped.
+// The record's normal is A->B and velocities are B relative to A; Unity expects them from the
+// receiver's point of view, so A gets the normal flipped and B the velocities flipped.
 function buildCollision(contact, forA, withContacts) {
     const self = forA ? contact.a : contact.b;
     const other = forA ? contact.b : contact.a;
@@ -510,14 +484,13 @@ function buildCollision(contact, forA, withContacts) {
     });
 }
 
-// How hard it is to change the relative velocity along (dx, dy) at the point.
 function effectiveMass(a, b, point, dx, dy) {
     const ra = point.rax * dy - point.ray * dx;
     const rb = point.rbx * dy - point.rby * dx;
     return a.invMass + b.invMass + ra * ra * a.invI + rb * rb * b.invI;
 }
 
-// Velocity of B relative to A at the point (linear plus angular), written to RV.
+// Writes to RV.
 function relativeVelocity(a, b, point) {
     const va = a.isStatic ? STILL : a.rb.velocity;
     const vb = b.isStatic ? STILL : b.rb.velocity;
@@ -525,7 +498,7 @@ function relativeVelocity(a, b, point) {
     RV.y = vb.y + b.w * point.rbx - (va.y + a.w * point.rax);
 }
 
-// Geometric mean like Unity; a body without a Rigidbody doesn't affect the result.
+// A body without a Rigidbody doesn't affect the result.
 function combineFriction(fa, fb) {
     if (fa === null) return fb ?? 0;
     if (fb === null) return fa;
@@ -543,13 +516,11 @@ function narrowPhase(a, b) {
     return true;
 }
 
-// Half width of a box projected on the axis (x, y).
 function projectedRadius(box, x, y) {
     return box.ex * Math.abs(x * box.cos + y * box.sin) + box.ey * Math.abs(-x * box.sin + y * box.cos);
 }
 
-// Separating axis test on the 4 face normals, then the contact points are found by clipping
-// the incident face (the other box's face most opposed to the normal) to the reference face.
+// SAT, then clip the incident face against the reference face.
 function boxBox(a, b) {
     const dx = b.cx - a.cx;
     const dy = b.cy - a.cy;
@@ -574,7 +545,6 @@ function boxBox(a, b) {
     const inc = useB ? a : b;
     const axis = useB ? axisB : axisA;
 
-    // Reference face normal, pointing from the reference box towards the incident one.
     let rnx = axis === 0 ? ref.cos : -ref.sin;
     let rny = axis === 0 ? ref.sin : ref.cos;
     if ((inc.cx - ref.cx) * rnx + (inc.cy - ref.cy) * rny < 0) {
@@ -589,7 +559,6 @@ function boxBox(a, b) {
     const tx = -rny;
     const ty = rnx;
 
-    // Incident face: of the other box's 4 normals, the one most opposed to the reference normal.
     const ux = inc.cos, uy = inc.sin;
     const vx = -inc.sin, vy = inc.cos;
     const du = rnx * ux + rny * uy;
@@ -610,7 +579,6 @@ function boxBox(a, b) {
         ehy = uy * inc.ex;
     }
 
-    // Incident edge as two points, clipped to the reference face's sides along the tangent.
     let p1x = icx - ehx, p1y = icy - ehy;
     let p2x = icx + ehx, p2y = icy + ehy;
     let t1 = (p1x - fcx) * tx + (p1y - fcy) * ty;
@@ -629,7 +597,7 @@ function boxBox(a, b) {
         }
     }
 
-    // Keep the points below the reference face, moved halfway out so they sit between the boxes.
+    // Moved halfway out so the points sit between the boxes.
     HIT.count = 0;
     for (const [px, py] of [[p1x, p1y], [p2x, p2y]]) {
         const separation = (px - fcx) * rnx + (py - fcy) * rny;
@@ -649,7 +617,7 @@ function boxBox(a, b) {
     return true;
 }
 
-// Rounding left no clipped point: still resolve the overlap, at the midpoint of the centers.
+// Rounding left no clipped point.
 function contactFallback(a, b, useB, rnx, rny, bestA, bestB) {
     HIT.nx = useB ? -rnx : rnx;
     HIT.ny = useB ? -rny : rny;
@@ -682,7 +650,7 @@ function circleCircle(a, b) {
     return true;
 }
 
-// Normal points from the circle to the box. Solved in the box's local space.
+// Normal points from the circle to the box.
 function circleBox(circle, box) {
     const radius = circle.ex;
     const hx = box.ex;
@@ -709,7 +677,6 @@ function circleBox(circle, box) {
         py = closestY;
         HIT.depth = radius - dist;
     } else {
-        // Center is inside the box: leave through the nearest face.
         const left = dx + hx;
         const right = hx - dx;
         const top = dy + hy;

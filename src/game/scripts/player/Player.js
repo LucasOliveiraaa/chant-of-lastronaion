@@ -1,6 +1,6 @@
 import GameObject from "../../../engine/core/GameObject.js";
 import Rigidbody from "../../../engine/physics/Rigidbody.js";
-import SquareCollider from "../../../engine/physics/SquareCollider.js";
+import Collider from "../../../engine/physics/Collider.js";
 import SolidRenderer from "../../../engine/rendering/SolidRenderer.js";
 import PlayerState from "./PlayerState.js";
 import PlayerMovement from "./PlayerMovement.js";
@@ -12,7 +12,7 @@ import Vector2 from "../../../engine/math/Vector2.js";
 
 export class PlayerPrefab extends Prefab {
     constructor() {
-        super("Player", SpriteRenderer, Animator, Rigidbody, SquareCollider, PlayerMovement, PlayerState);
+        super("Player", SpriteRenderer, Animator, Rigidbody, Collider, PlayerMovement, PlayerState);
 
         this.tag = "player";
 
@@ -27,9 +27,10 @@ export class PlayerPrefab extends Prefab {
         rb.gravityScale = 0;
         rb.freezeRotation = true;
 
-        const collider = this.getComponent(SquareCollider);
-        collider.size = new Vector2(10, 20);
-        collider.offset = new Vector2(0, 5);
+        const collider = this.getComponent(Collider);
+        collider.type = Collider.CIRCLE;
+        collider.radius = 8;
+        collider.offset = new Vector2(0, 15);
         collider.debug = true;
     }
 }
