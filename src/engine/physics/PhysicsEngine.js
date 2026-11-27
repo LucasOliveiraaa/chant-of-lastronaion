@@ -383,8 +383,11 @@ export default class PhysicsEngine {
 
         this._contacts = current;
 
-        // Snapshot so handlers can add/remove objects safely.
-        for (const [name, target, argument] of events) {
+        // Snapshot so handlers can add/remove objects safely. A handler may destroy an object
+        // that later events still mention (a projectile destroying itself on a hit): enter/stay
+        // events about it are dropped, so no handler gets a collider without a GameObject.
+        for (const [name, target, argument, other] of events) {
+            if (target.isDestroyed || other?.isDestroyed) continue;
             target.sendMessage(name, argument);
         }
     }
@@ -432,9 +435,9 @@ function touchEvent(contact, forA, stay) {
     const self = forA ? contact.a : contact.b;
     const other = forA ? contact.b : contact.a;
     if (!contact.enabled) {
-        return [stay ? "OnTriggerStay" : "OnTriggerEnter", self.gameObject, other.collider];
+        return [stay ? "OnTriggerStay" : "OnTriggerEnter", self.gameObject, other.collider, other.gameObject];
     }
-    return [stay ? "OnCollisionStay" : "OnCollisionEnter", self.gameObject, buildCollision(contact, forA, true)];
+    return [stay ? "OnCollisionStay" : "OnCollisionEnter", self.gameObject, buildCollision(contact, forA, true), other.gameObject];
 }
 
 function exitEvent(contact, forA) {

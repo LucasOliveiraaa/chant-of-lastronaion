@@ -1,9 +1,9 @@
-import Component from "../../../engine/core/Component.js";
-import GameObject from "../../../engine/core/GameObject.js";
-import Time from "../../../engine/core/Time.js";
-import Vector2 from "../../../engine/math/Vector2.js";
-import Collider from "../../../engine/physics/Collider.js";
-import DungeonManager from "../dungeon/DungeonManager.js";
+import Component from "../../../../engine/core/Component.js";
+import GameObject from "../../../../engine/core/GameObject.js";
+import Time from "../../../../engine/core/Time.js";
+import Vector2 from "../../../../engine/math/Vector2.js";
+import Collider from "../../../../engine/physics/Collider.js";
+import DungeonManager from "../../dungeon/DungeonManager.js";
 import NavGrid from "./NavGrid.js";
 
 const MAX_SKIPS_PER_FRAME = 4;

@@ -1,7 +1,6 @@
-import Vector2 from "../../../engine/math/Vector2.js";
-import ChamberManager from "../dungeon/ChamberManager.js";
-import { Tile } from "../../lib/Tile.js";
-import { TILE_WIDTH, ROOM_WIDTH } from "../Config.js";
+import Vector2 from "../../../../engine/math/Vector2.js";
+import { isWalkable } from "../../dungeon/tiles/Tiles.js";
+import { TILE_WIDTH } from "../../Config.js";
 
 // Navigation cells per tile side.
 export const NAV_SUBDIVISION = 4;
@@ -22,7 +21,7 @@ export default class NavGrid {
     static #cache = new WeakMap();
 
     static forChamber(chamber) {
-        if (!chamber || chamber.isDestroyed || !chamber.cells?.length) return null;
+        if (!chamber || chamber.isDestroyed || !chamber.blueprint) return null;
 
         let grid = NavGrid.#cache.get(chamber);
         if (!grid) {
@@ -58,29 +57,19 @@ export default class NavGrid {
         this.#computeClearance();
     }
 
+    // The chamber's tile layer starts at the grid's origin, one tile = sub x sub cells.
     #markTiles(chamber) {
         const sub = NAV_SUBDIVISION;
 
-        for (const cell of chamber.cells) {
-            const room = chamber.rooms.get(cell.room);
-            if (!room) continue;
+        for (const { x, y, value: tileId } of chamber.blueprint.tiles.entries()) {
+            if (!isWalkable(tileId)) continue;
 
-            const origin = ChamberManager.cellOrigin(cell.position);
-            const baseX = Math.round((origin.x - this.originX) / this.cellSize);
-            const baseY = Math.round((origin.y - this.originY) / this.cellSize);
-
-            room.tiles.forEach((tileId, i) => {
-                const tile = Tile[tileId];
-                if (!tile || tile.obstacle || tile.door) return;
-
-                const gx = baseX + (i % ROOM_WIDTH) * sub;
-                const gy = baseY + Math.floor(i / ROOM_WIDTH) * sub;
-                for (let y = 0; y < sub; y++) {
-                    for (let x = 0; x < sub; x++) {
-                        this.walkable[this.index(gx + x, gy + y)] = 1;
-                    }
+            const gx = x * sub, gy = y * sub;
+            for (let dy = 0; dy < sub; dy++) {
+                for (let dx = 0; dx < sub; dx++) {
+                    this.walkable[this.index(gx + dx, gy + dy)] = 1;
                 }
-            });
+            }
         }
     }
 

@@ -1,7 +1,8 @@
 import Component from "../../../engine/core/Component.js";
 import Rigidbody from "../../../engine/physics/Rigidbody.js";
 import SolidRenderer from "../../../engine/rendering/SolidRenderer.js";
-import EnemyAI from "./EnemyAI.js";
+import EnemyAI from "./nav/EnemyAI.js";
+import EnemyState from "./EnemyState.js";
 import { SPEED as SpeedPlayer } from "../player/PlayerMovement.js";
 import PlayerState from "../player/PlayerState.js";
 import Collider from "../../../engine/physics/Collider.js";
@@ -9,7 +10,7 @@ import Collider from "../../../engine/physics/Collider.js";
 const SPEED = SpeedPlayer * 0.85;
 
 export default class Enemy extends Component {
-    static requiredComponents = [Rigidbody, EnemyAI];
+    static requiredComponents = [Rigidbody, EnemyAI, EnemyState];
 
     stopDistance = 0;
 

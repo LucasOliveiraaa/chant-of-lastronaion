@@ -36,14 +36,13 @@ export class HeartsManager extends Component {
     setHeartState() {
         if (!this.playerState) return;
 
-        if (this.playerState.health % 0.5 !== 0) {
-            // Correct to the nearest half-heart value
-            this.playerState.health = Math.round(this.playerState.health * 2) / 2;
-        }
+        // Damage multipliers can leave any fraction; show it as the next half heart, so a
+        // living player never shows zero hearts. Display only: health itself is untouched.
+        const health = Math.ceil(this.playerState.health * 2) / 2;
 
         this.heartState = [];
 
-        let currVal = this.playerState.health;
+        let currVal = health;
         while (currVal > 0) {
             if (currVal >= 1) {
                 this.heartState.push(1);
@@ -54,13 +53,13 @@ export class HeartsManager extends Component {
             }
         }
 
-        const taken = this.playerState.maxHealth - Math.ceil(this.playerState.health);
+        const taken = this.playerState.maxHealth - Math.ceil(health);
         for (let i = 0; i < taken; i++) {
             this.heartState.push(0);
         }
 
-        if (this.previousHealth !== this.playerState.health) {
-            this.previousHealth = this.playerState.health;
+        if (this.previousHealth !== health) {
+            this.previousHealth = health;
             this.updateHearts();
         }
     }

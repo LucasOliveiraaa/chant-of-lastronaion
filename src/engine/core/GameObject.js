@@ -21,6 +21,7 @@ export default class GameObject {
 
     __lifecycleStarted = false;
     __startQueue = Promise.resolve();
+    __destroyed = false;
 
     constructor(name = "Game Object", ...components) {
         this.name = name;
@@ -37,6 +38,10 @@ export default class GameObject {
 
     get isPrefab() {
         return false;
+    }
+
+    get isDestroyed() {
+        return this.__destroyed;
     }
 
     // ---- Unity's Object.Instantiate ------------------------------------
@@ -330,6 +335,9 @@ export default class GameObject {
     }
 
     destroy() {
+        if (this.__destroyed) return;
+        this.__destroyed = true;
+
         // Like Unity, children go with their parent. Done first, while the transforms
         // still point at their GameObjects.
         const transform = this.transform;

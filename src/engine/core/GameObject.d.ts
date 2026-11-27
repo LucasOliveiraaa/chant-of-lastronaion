@@ -11,6 +11,8 @@ export default class GameObject {
 
     /** True for a Prefab: a template outside the World that never starts or updates. */
     readonly isPrefab: boolean;
+    /** True once destroy() has run; its components are gone. */
+    readonly isDestroyed: boolean;
 
     /** A Transform, or a RectTransform once one is added. */
     transform: Transform;

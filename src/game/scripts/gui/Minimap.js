@@ -7,7 +7,7 @@ import DungeonManager from "../dungeon/DungeonManager.js";
 import PlayerState from "../player/PlayerState.js";
 import { chamberState, drawPixelChamber } from "./Chamber.js";
 
-const PIXEL = 3;
+export const PIXEL = 3;
 const ROOM_CHUNKS = 9;
 const ROOM_PX = ROOM_CHUNKS * PIXEL;
 
@@ -15,9 +15,15 @@ const PANEL_WIDTH = 54 * PIXEL;
 const PANEL_HEIGHT = 54 * PIXEL;
 const PANEL_MARGIN = 4 * PIXEL;
 
-const PANEL_BG = "#00000066";
+export const PANEL_BG = "#00000066";
 const FRAME_OUTER = "#0a0907";
 const FRAME_INNER = "#34322a";
+
+// The HUD panels' two-tone pixel frame, drawn inside the rect.
+export function drawPanelFrame(graphics, x, y, w, h) {
+    strokeRect(graphics, x, y, w, h, PIXEL, FRAME_OUTER);
+    strokeRect(graphics, x + PIXEL, y + PIXEL, w - 2 * PIXEL, h - 2 * PIXEL, PIXEL, FRAME_INNER);
+}
 
 function strokeRect(graphics, x, y, w, h, t, color) {
     graphics.fillRect(x, y, w, t, color);
@@ -39,8 +45,7 @@ class MinimapElement extends UIElement {
         this.drawMap(graphics, x, y, w, h);
         graphics.restore();
 
-        strokeRect(graphics, x, y, w, h, PIXEL, FRAME_OUTER);
-        strokeRect(graphics, x + PIXEL, y + PIXEL, w - 2 * PIXEL, h - 2 * PIXEL, PIXEL, FRAME_INNER);
+        drawPanelFrame(graphics, x, y, w, h);
     }
 
     drawMap(graphics, x, y, w, h) {
@@ -91,9 +96,12 @@ export class MinimapManager extends Component {
         }
         this.dungeon = DungeonManager.instance;
 
+        // A new floor is a new dungeon, even if the instance number is the same.
         const instance = this.playerState?.currentChamber?.instance ?? null;
-        if (instance !== this.lastInstance) {
+        const result = this.dungeon?.result ?? null;
+        if (instance !== this.lastInstance || result !== this.lastResult) {
             this.lastInstance = instance;
+            this.lastResult = result;
             this.refresh();
         }
     }
