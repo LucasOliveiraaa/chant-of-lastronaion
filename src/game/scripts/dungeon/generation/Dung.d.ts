@@ -1,19 +1,28 @@
-import type Vector2 from "../../engine/math/Vector2.js";
-import type { TileId } from "./Tile.js";
+import type Vector2 from "../../../../engine/math/Vector2.js";
 
 export type RoomId = number;
 export type DirName = "top" | "right" | "bottom" | "left";
 
+/**
+ * One dungeon cell, the unit Dung places. A chamber spanning several cells is made of several
+ * rooms linked through `connections`. Extra fields (e.g. the game's chamber blueprint) are
+ * ignored by Dung and come back untouched in the room dictionary.
+ */
 export type Room = {
     id: RoomId;
-    tiles: TileId[];
     doors: Record<DirName, boolean>;
-    /** Only used by rooms that span more than one tile. */
+    /** Neighboring room of the same chamber on each side (multi-cell chambers), or null. */
     connections: Record<DirName, RoomId | null>;
     /** Base weight, defaults to 1. */
     weight?: number;
     /** "normal" (default), "boss", "start" or any custom kind. */
     kind?: string;
+    /**
+     * Defaults to 0. Among the candidates of the same kind that fit a cell, only those with
+     * the highest priority are considered; lower ones are used where none of them fit, or
+     * when the dungeon is over its target size and they open fewer doors.
+     */
+    priority?: number;
 };
 
 export type PlacedRoom = {
@@ -83,6 +92,11 @@ export type DungeonConfig = {
         count?: number;
         /** Weight multiplier at the right distance. */
         boost?: number;
+        /**
+         * Kind of the room placed right behind each boss. The boss then gets exactly one
+         * entrance and one extra door, which leads to a dead-end room of this kind.
+         */
+        exit?: string;
     };
 
     layout?: {
@@ -95,6 +109,13 @@ export type DungeonConfig = {
         loopBias?: number;
         /** Dead ends before the boss distance, <1 = longer paths. */
         deadEndPenalty?: number;
+        /**
+         * Against tightly packed dungeons: weight multiplier exp(-spread * crowding), where
+         * crowding counts taken cells around a candidate, new doors whose slot touches
+         * existing rooms, and new doors that don't lead away from the start. 0 (default)
+         * turns it off.
+         */
+        spread?: number;
     };
 
     kinds?: Record<string, KindRule>;

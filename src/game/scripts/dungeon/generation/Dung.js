@@ -2,7 +2,20 @@
 // Eu, Lucas, estou implementando em TypeScript primeiro porque não vejo como fazer sem TIPOOSSSSS.
 // Basicamente esse algoritimo é uma modificação de um Wave-function Collapser. Isso é necessário já que o WFC não tem a ideia de espaços em branco ou o tamanho esperado para uma dungeon, então eu adicionei algumas patches para que ele gere uma dungeon válida, sem salas órfãs (sem conexões com a sala inicial) e com um tamanho controlável.
 
-import Vector2 from "../../engine/math/Vector2.js";
+// How it plugs into the game (see ../README.md for the whole pipeline):
+//   input  - a Map of rooms, one per dungeon cell, compiled from the chamber catalog by
+//            ChamberLibrary. Dung only reads id, doors, connections, weight and kind; the
+//            game attaches extra fields (the chamber blueprint) that pass through untouched.
+//   output - one PlacedRoom per occupied cell. Cells of the same chamber share `instance`,
+//            which is what DungeonManager turns into a ChamberManager when the player enters.
+//
+// Steps: resolveConfig (defaults) -> buildInfos (footprint of every chamber) -> Attempt.run
+// (collapse the frontier one cell at a time) -> Attempt.finish (validate the result).
+// With boss.exit set, each boss is placed with exactly one extra door, and the cell behind
+// it is filled right away with a dead-end room of the exit kind. Failed
+// attempts are retried with the same rng until one passes or maxAttempts runs out.
+
+import Vector2 from "../../../../engine/math/Vector2.js";
 
 const DIRS = [
     { name: "top", opposite: "bottom", dx: 0, dy: -1 },
@@ -37,6 +50,8 @@ function pickWeighted(weights, rng) {
     return last;
 }
 
+// ---- Configuration ----------------------------------------------------------------
+
 function resolveConfig(config) {
     const tolerance = config.size.tolerance ?? 0.2;
     const target = config.size.target;
@@ -59,8 +74,10 @@ function resolveConfig(config) {
         bossTolerance: config.boss?.tolerance ?? 1,
         bossCount: config.boss ? (config.boss.count ?? 1) : 0,
         bossBoost: config.boss?.boost ?? 20,
+        exitKind: config.boss?.exit ?? null,
         order: config.layout?.order ?? "entropy",
         loopBias: config.layout?.loopBias ?? 1,
+        spread: config.layout?.spread ?? 0,
         deadEndPenalty: config.layout?.deadEndPenalty ?? 0.05,
         kinds: config.kinds ?? {},
         weightModifier: config.weightModifier,
@@ -71,6 +88,8 @@ function resolveConfig(config) {
     }
     return cfg;
 }
+
+// ---- Footprints ---------------------------------------------------------------------
 
 // Footprint of every room seen from each one of its cells (the anchor)
 function buildInfos(roomDict) {
@@ -113,6 +132,7 @@ function buildInfos(roomDict) {
 
         const kinds = cells.map(c => roomDict.get(c.id).kind ?? "normal");
         infos.set(anchor, {
+            priority: Math.max(...cells.map(c => roomDict.get(c.id).priority ?? 0)),
             cells,
             cellAt,
             // divided by the cell count, otherwise big rooms get more anchors
@@ -124,12 +144,15 @@ function buildInfos(roomDict) {
     return infos;
 }
 
+// ---- One generation attempt ----------------------------------------------------------
+
 class Attempt {
     grid = new Map();
     frontier = new Map(); // empty cells with a door pointing at them
     depths = [];          // distance of each instance through its entry path
     kindCounts = new Map();
     bossInstances = [];
+    exitSlots = new Set(); // cells right after a boss, reserved for its exit room
 
     constructor(roomDict, infos, spawnable, cfg, maxSpan) {
         this.roomDict = roomDict;
@@ -156,10 +179,21 @@ class Attempt {
         for (const e of entries) {
             e.depth = this.depthAt(e.x, e.y);
             if (!e.candidates) {
-                e.candidates = this.getCandidates(e.x, e.y);
+                e.candidates = this.exitSlots.has(key(e.x, e.y)) ? this.getExitCandidates(e.x, e.y) : this.getCandidates(e.x, e.y);
                 e.entropy = undefined;
             }
             if (e.candidates.length === 0) return "contradiction";
+        }
+
+        // A boss was just placed: its exit room goes behind it before anything else.
+        const slot = entries.find(e => this.exitSlots.has(key(e.x, e.y)));
+        if (slot) {
+            const weights = slot.candidates.map(c => c.info.weight);
+            this.applyPriority(slot.candidates, weights);
+            const i = pickWeighted(weights, cfg.rng);
+            if (i < 0) return "no-valid-weight";
+            this.place(slot.candidates[i].info, slot.x, slot.y, slot.depth);
+            return null;
         }
 
         // Missing boss: force it as soon as a cell reaches the right distance
@@ -185,10 +219,41 @@ class Attempt {
             cands = cands.filter(c => c.delta === min);
         }
 
-        const i = pickWeighted(cands.map(c => this.weightOf(c, target, needBoss)), cfg.rng);
+        const weights = cands.map(c => this.weightOf(c, target, needBoss));
+        this.applyPriority(cands, weights);
+        const i = pickWeighted(weights, cfg.rng);
         if (i < 0) return "no-valid-weight";
         this.place(cands[i].info, target.x, target.y, target.depth);
         return null;
+    }
+
+    // Per kind, the highest-priority candidates that can be placed win: lower-priority ones
+    // are dropped, except where size control needs them. Over the target size, a lower one
+    // that opens fewer doors than every higher one stays in, so priority never makes the
+    // dungeon overshoot.
+    applyPriority(cands, weights) {
+        const top = new Map(); // kind -> { priority, minDelta } of the best tier that can be placed
+        cands.forEach((c, i) => {
+            if (!(weights[i] > 0)) return;
+            const t = top.get(c.info.kind);
+            if (!t || c.info.priority > t.priority) top.set(c.info.kind, { priority: c.info.priority, minDelta: c.delta });
+            else if (c.info.priority === t.priority) t.minDelta = Math.min(t.minDelta, c.delta);
+        });
+
+        const overTarget = this.cfg.sizeControl && this.sizePressure() > 0;
+        cands.forEach((c, i) => {
+            const t = top.get(c.info.kind);
+            if (!t || c.info.priority >= t.priority) return;
+            if (overTarget && c.delta < t.minDelta) return;
+            weights[i] = 0;
+        });
+    }
+
+    // > 0 when the projected size is past the size the generator aims for.
+    sizePressure() {
+        const { cfg } = this;
+        const projected = this.depths.length + this.frontier.size;
+        return Math.max(-1, Math.min(2, (projected - cfg.target * cfg.aim) / cfg.target));
     }
 
     selectEntry(entries) {
@@ -229,6 +294,11 @@ class Attempt {
         if (kind === "boss") {
             if (this.bossInstances.length >= cfg.bossCount) return 0;
             if (Math.abs(at.depth - cfg.bossDistance) > cfg.bossTolerance) return 0;
+            // Never before its distance: grabbing the first cell within tolerance ended the
+            // growth early (no boss left to reach, so every branch closed) and packed the
+            // whole dungeon around the start. The tolerance is still accepted when a cell
+            // can only be reached that way (forced placement) and in the final check.
+            if (at.depth < cfg.bossDistance) return 0;
             w *= cfg.bossBoost;
         } else {
             const rule = cfg.kinds[kind];
@@ -237,16 +307,19 @@ class Attempt {
             w *= rule?.weight ?? 1;
             if (rule?.min !== undefined && count < rule.min) w *= 10;
 
-            // no boss yet and still far: avoid dead ends
-            if (needBoss && at.depth < cfg.bossDistance && c.delta < 0) w *= cfg.deadEndPenalty;
+            // no boss yet and still far: avoid dead ends, closing the last way on only as a last resort
+            if (needBoss && at.depth < cfg.bossDistance && c.delta < 0) {
+                w *= cfg.deadEndPenalty;
+                if (this.frontier.size <= 1) w *= cfg.deadEndPenalty * cfg.deadEndPenalty;
+            }
 
             // size control: over the target discourages doors, under encourages them
             if (cfg.sizeControl) {
-                const projected = this.depths.length + this.frontier.size;
-                const pressure = Math.max(-1, Math.min(2, (projected - cfg.target * cfg.aim) / cfg.target));
-                w *= Math.exp(-cfg.growthBias * pressure * c.delta);
+                w *= Math.exp(-cfg.growthBias * this.sizePressure() * c.delta);
             }
             if (c.loops > 0) w *= Math.pow(cfg.loopBias, c.loops);
+            // open layouts: discourage squeezing into built-up spots and doors facing them
+            if (cfg.spread > 0) w *= Math.exp(-cfg.spread * c.crowding);
         }
 
         if (cfg.weightModifier) {
@@ -260,19 +333,82 @@ class Attempt {
     }
 
     getCandidates(x, y) {
+        const { cfg } = this;
         const out = [];
         for (const [id, info] of this.spawnable) {
+            if (info.kind === cfg.exitKind) continue; // only behind a boss, see getExitCandidates
             const fit = this.tryFit(info, x, y);
+            if (!fit) continue;
+            // a boss with an exit needs exactly one way in, one way out, and room for the exit there
+            if (info.kind === "boss" && cfg.exitKind && !(fit.joined === 1 && fit.open === 1 && this.exitFits(info, x, y, fit.targets[0]))) continue;
             // delta: new open doors - 1 (the entry slot gets filled)
-            if (fit) out.push({ id, info, delta: fit.open - 1, open: fit.open, loops: Math.max(0, fit.joined - 1) });
+            out.push({
+                id, info, delta: fit.open - 1, open: fit.open, loops: Math.max(0, fit.joined - 1),
+                crowding: cfg.spread > 0 ? this.crowdingOf(info, x, y, fit.targets) : 0,
+            });
         }
         return out;
     }
 
-    // null if it doesn't fit; open = doors to empty cells, joined = doors to existing rooms
+    getExitCandidates(x, y) {
+        const out = [];
+        for (const [id, info] of this.spawnable) {
+            if (info.kind !== this.cfg.exitKind) continue;
+            const fit = this.tryFit(info, x, y);
+            if (fit && fit.open === 0) out.push({ id, info, delta: -1, open: 0, loops: 0, crowding: 0 });
+        }
+        return out;
+    }
+
+    // Whether an exit room fits at `slot` once the boss is placed at (x, y).
+    exitFits(info, x, y, slot) {
+        const cells = info.cells.map(c => [key(x + c.dx, y + c.dy), { room: c.id }]);
+        for (const [k, v] of cells) this.grid.set(k, v);
+        try {
+            for (const [, exit] of this.spawnable) {
+                if (exit.kind !== this.cfg.exitKind) continue;
+                const fit = this.tryFit(exit, slot.x, slot.y);
+                if (fit && fit.open === 0) return true;
+            }
+            return false;
+        } finally {
+            for (const [k] of cells) this.grid.delete(k);
+        }
+    }
+
+    // How built-up a placement is: taken cells around the room (diagonals too), new doors
+    // whose slot touches existing rooms (it will squeeze in between them), and new doors
+    // that don't lead farther from the start (the map folds back on itself).
+    crowdingOf(info, x, y, targets) {
+        const own = new Set(info.cells.map(c => key(x + c.dx, y + c.dy)));
+        const seen = new Set();
+        let crowd = 0;
+        for (const c of info.cells) {
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    const k = key(x + c.dx + dx, y + c.dy + dy);
+                    if (own.has(k) || seen.has(k)) continue;
+                    seen.add(k);
+                    if (this.grid.has(k)) crowd++;
+                }
+            }
+        }
+        for (const t of targets) {
+            for (const d of DIRS) {
+                const k = key(t.x + d.dx, t.y + d.dy);
+                if (!own.has(k) && this.grid.has(k)) crowd++;
+            }
+            if (t.x * t.x + t.y * t.y <= t.fromX * t.fromX + t.fromY * t.fromY) crowd++;
+        }
+        return crowd;
+    }
+
+    // null if it doesn't fit; open = doors to empty cells (targets = those cells),
+    // joined = doors to existing rooms
     tryFit(info, x, y) {
         const ext = this.cfg.maxExtent;
         let open = 0, joined = 0;
+        const targets = [];
 
         for (const cell of info.cells) {
             const cx = x + cell.dx, cy = y + cell.dy;
@@ -300,10 +436,11 @@ class Attempt {
                     if (isOpen) joined++;
                 } else if (isOpen) {
                     open++;
+                    targets.push({ x: nx, y: ny, fromX: cx, fromY: cy });
                 }
             }
         }
-        return { open, joined };
+        return { open, joined, targets };
     }
 
     depthAt(x, y) {
@@ -337,6 +474,8 @@ class Attempt {
                 if (!this.grid.has(k) && !this.frontier.has(k)) {
                     this.frontier.set(k, { x: nx, y: ny, depth: 0 });
                 }
+                // the boss's one open door leads to its exit
+                if (info.kind === "boss" && this.cfg.exitKind && !this.grid.has(k)) this.exitSlots.add(k);
             }
         }
 
@@ -354,6 +493,7 @@ class Attempt {
         const n = this.depths.length;
         if (n < cfg.minRooms || n > cfg.maxRooms) return { reason: n < cfg.minRooms ? "too-small" : "too-big" };
         if (this.bossInstances.length < cfg.bossCount) return { reason: "boss-missing" };
+        if (cfg.exitKind && (this.kindCounts.get(cfg.exitKind) ?? 0) < this.bossInstances.length) return { reason: "exit-missing" };
 
         for (const [kind, rule] of Object.entries(cfg.kinds)) {
             if (rule.min !== undefined && (this.kindCounts.get(kind) ?? 0) < rule.min) return { reason: `kind-min:${kind}` };
@@ -391,6 +531,8 @@ class Attempt {
     }
 }
 
+// ---- Public API -----------------------------------------------------------------------
+
 function generateDungeonWithStats(roomDict, initialRoom, config) {
     const cfg = resolveConfig(config);
 
@@ -398,6 +540,9 @@ function generateDungeonWithStats(roomDict, initialRoom, config) {
     if (!infos.has(initialRoom)) throw new Error(`Initial room ${initialRoom} doesn't exist`);
     if (cfg.bossCount > 0 && ![...infos.values()].some(i => i.kind === "boss")) {
         throw new Error('boss is configured but no room has kind "boss"');
+    }
+    if (cfg.exitKind && ![...infos.values()].some(i => i.kind === cfg.exitKind)) {
+        throw new Error(`boss.exit is "${cfg.exitKind}" but no room has that kind`);
     }
 
     const spawnable = [...infos.entries()].filter(([id]) => (roomDict.get(id).kind ?? "normal") !== "start");
